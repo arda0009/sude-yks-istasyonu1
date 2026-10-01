@@ -23,8 +23,8 @@ except ImportError:
     OpenAI = None
 
 # --- API ANAHTARLARI (ELİNDE OLANLARI GİR, OLMAYANLARI BOŞ BIRAK) ---
-GROQ_API_KEY = ""
-GEMINI_API_KEY = ""
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
 
 # Tarayıcı sekmesinde görünecek başlık
