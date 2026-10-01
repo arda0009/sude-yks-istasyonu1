@@ -521,15 +521,7 @@ def c_panel():
                 st.info("Sinyal kapatıldı.")
     elif sifre: st.error("İzinsiz giriş!")
 
-# --- KADEMELİ (FALLBACK) YAPAY ZEKA SİSTEMİ ---
-# --- KADEMELİ (FALLBACK) YAPAY ZEKA SİSTEMİ (HATA AYIKLAMA MODU) ---
-# --- KADEMELİ (FALLBACK) YAPAY ZEKA SİSTEMİ (HATALAR ÇÖZÜLDÜ) ---
-# --- KADEMELİ (FALLBACK) YAPAY ZEKA SİSTEMİ (KESİN ÇÖZÜM) ---
-# --- KÜTÜPHANESİZ, KESİN ÇALIŞAN YAPAY ZEKA SİSTEMİ ---
-# --- KÜTÜPHANESİZ, TÜM MODELLERİ DENEYEN GARANTİ SİSTEM ---
-# --- KÜTÜPHANESİZ, KESİN ÇALIŞAN YAPAY ZEKA SİSTEMİ (GÜNCEL 3.8 FLASH) ---
-# --- KÜTÜPHANESİZ, ÇİFT MOTORLU YEDEKLİ YAPAY ZEKA SİSTEMİ ---
-# --- HATA DEDEKTİFLİ, ÇİFT MOTORLU YEDEKLİ YAPAY ZEKA SİSTEMİ ---
+# --- KESİN ÇALIŞAN ÇİFT MOTORLU YEDEKLİ YAPAY ZEKA SİSTEMİ ---
 def c_yapay_zeka():
     import requests 
     
@@ -537,22 +529,24 @@ def c_yapay_zeka():
     st.write("Sınav süreciyle ilgili takıldığın soruları sorabilir, taktikler alabilirsin.")
     soru = st.text_input("Bugün hangi konuda yardıma ihtiyacın var?", placeholder="Örn: Paragraf netlerimi nasıl artırabilirim?")
     
-
+    # Şifreler Streamlit Secrets kasasından güvenle çekiliyor
+    GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
+    GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
     
     if st.button("✨ Asistana Sor", use_container_width=True):
         if soru.strip():
-            if (GEMINI_API_KEY == "BURAYA_KENDI_GEMINI_KEYINI_YAZ" or not GEMINI_API_KEY) and (GROQ_API_KEY == "BURAYA_KENDI_GROQ_KEYINI_YAZ" or not GROQ_API_KEY):
-                st.warning("⚠️ Lütfen kodun içindeki API anahtarlarından en az birini yapıştır!")
+            if not GROQ_API_KEY and not GEMINI_API_KEY:
+                st.warning("⚠️ Streamlit Secrets kısmında API anahtarı bulunamadı!")
                 return
                 
             with st.spinner("🤔 Arda düşünüyor..."):
                 cevap = None
                 kullanilan_model = ""
-                hatalar = [] # Gizli hataları burada toplayacağız
+                hatalar = []
                 prompt = f"Sen YKS sınavına hazırlanan Sude adında bir öğrenciye destek olan ve ismi Arda olan profesyonel bir rehberlik asistanısın. Sude sana şunu sordu: '{soru}'. Sude'ye motive edici, çok tatlı, samimi, pratik ve eğitici bir cevap ver (maksimum 3-4 cümle)."
 
-                # 1. MOTOR: GROQ (REST API)
-                if GROQ_API_KEY and GROQ_API_KEY != "BURAYA_KENDI_GROQ_KEYINI_YAZ":
+                # 1. MOTOR: GROQ (Hafif Llama 3.1 + max_tokens sınırlaması)
+                if GROQ_API_KEY:
                     try:
                         url_groq = "https://api.groq.com/openai/v1/chat/completions"
                         headers_groq = {
@@ -560,20 +554,21 @@ def c_yapay_zeka():
                             "Content-Type": "application/json"
                         }
                         payload_groq = {
-                            "model": "qwen/qwen3.8-27b", 
-                            "messages": [{"role": "user", "content": prompt}]
+                            "model": "llama-3.1-8b-instant",
+                            "messages": [{"role": "user", "content": prompt}],
+                            "max_tokens": 300  # Token limit aşımını engelleyen kritik satır
                         }
                         res_groq = requests.post(url_groq, json=payload_groq, headers=headers_groq)
                         if res_groq.status_code == 200:
                             cevap = res_groq.json()['choices'][0]['message']['content']
                             kullanilan_model = "Groq"
                         else:
-                            hatalar.append(f"🔴 Groq Reddedilme Sebebi: {res_groq.text}")
+                            hatalar.append(f"🔴 Groq Hatası: {res_groq.text}")
                     except Exception as e:
                         hatalar.append(f"🔴 Groq Sistem Hatası: {str(e)}")
 
-                # 2. MOTOR: GEMINI (REST API)
-                if not cevap and GEMINI_API_KEY and GEMINI_API_KEY != "BURAYA_KENDI_GEMINI_KEYINI_YAZ":
+                # 2. MOTOR: GEMINI (Groq yanıt vermezse devreye girer)
+                if not cevap and GEMINI_API_KEY:
                     try:
                         url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
                         payload_gemini = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -584,7 +579,7 @@ def c_yapay_zeka():
                             cevap = res_gemini.json()['candidates'][0]['content']['parts'][0]['text']
                             kullanilan_model = "Google Gemini"
                         else:
-                            hatalar.append(f"🔵 Gemini Reddedilme Sebebi: {res_gemini.text}")
+                            hatalar.append(f"🔵 Gemini Hatası: {res_gemini.text}")
                     except Exception as e:
                         hatalar.append(f"🔵 Gemini Sistem Hatası: {str(e)}")
                         
@@ -593,11 +588,9 @@ def c_yapay_zeka():
                     st.info(f"💡 **Arda'nın Cevabı:**\n\n{cevap}")
                     st.caption(f"⚡ Yanıtlayan servis: {kullanilan_model}")
                 else:
-                    st.error("⚠️ SİSTEM YANIT VERMEDİ! İşte gerçek hatalar (Bunu bana gönder):")
-                    for hata in hatalar:
-                        st.write(hata)    
-    # ANAHTARLARINI BURAYA YAPIŞTIR (Tırnakları silmeden):
-
+                    st.error("⚠️ Sistem şu an yanıt veremedi. Detaylar:")
+                    for h in hatalar:
+                        st.write(h)
 
 def c_eglence():
     st.header("🕹️ Eğlence & Mola Merkezi")
