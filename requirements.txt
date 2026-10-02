@@ -4,3 +4,4 @@ streamlit
 groq
 openai
 google-genai
+gspread
