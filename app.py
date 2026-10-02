@@ -184,23 +184,31 @@ def c_su():
     bugun_str = datetime.date.today().strftime("%d.%m.%Y")
     df_su = load_df("su_takip.csv", "Su", {"Tarih": [bugun_str], "Bardak": [0]})
     
-    if df_su.iloc[0]["Tarih"] != bugun_str: 
+    # KRİTİK DÜZELTME: Tablo boşsa veya tarih uyuşmuyorsa çökmesini engelliyoruz
+    if df_su.empty or df_su.iloc[0]["Tarih"] != bugun_str: 
         df_su = pd.DataFrame([{"Tarih": bugun_str, "Bardak": 0}])
         save_df(df_su, "su_takip.csv", "Su")
         
+    # Tablo artık kesinlikle dolu olduğu için güvenle okuyabiliriz
     mevcut_su = int(df_su.iloc[0]["Bardak"])
     s1, s2 = st.columns([2, 1])
+    
     with s1:
         bardaklar = "💧" * mevcut_su + "🧊" * (8 - mevcut_su) if mevcut_su <= 8 else "💧" * 8 + f" (+{mevcut_su-8})"
-        st.markdown(f"<h3 style='margin:0; padding:0; font-size: 24px;'>{bardaklar}</h3>", unsafe_allow_html=True); st.caption(f"Hedef: 8 Bardak | İçilen: {mevcut_su}")
+        st.markdown(f"<h3 style='margin:0; padding:0; font-size: 24px;'>{bardaklar}</h3>", unsafe_allow_html=True)
+        st.caption(f"Hedef: 8 Bardak | İçilen: {mevcut_su}")
+        
     with s2:
         if st.button("İçtim 🚰", use_container_width=True):
             df_su.at[0, "Bardak"] = mevcut_su + 1
             save_df(df_su, "su_takip.csv", "Su")
-            if mevcut_su + 1 == 8: st.success("Hedef tamam!"); st.balloons()
+            if mevcut_su + 1 == 8: 
+                st.success("Hedef tamam!")
+                st.balloons()
             st.rerun()
+            
     st.write("---")
-
+    
 def c_oduller():
     st.subheader("🎁 Arda'nın Ödül Sistemi")
     max_tyt = 0.0; max_saat = 0.0; kayitli_gun_sayisi = 0
