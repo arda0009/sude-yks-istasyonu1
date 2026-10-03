@@ -560,30 +560,7 @@ def c_panel():
             else:
                 st.info("Henüz grafik oluşturacak gün sonu verisi girilmemiş.")
                     
-# Muhtemelen öncesinde "if girilen_sifre == dogru_sifre:" gibi bir ana blok var
-    with tab_veri:
-        st.header("📊 Yönetici Paneli: Sude'nin Performans Analizi")
-        df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
 
-        if not df_gunluk.empty:
-            st.subheader("Sude'nin Günlük İstatistikleri")
-            gunluk_dosya = "sude_genel_takip.csv"
-            
-            # Bu kontrolün if not df_gunluk.empty bloğunun içinde olması gerekiyor
-            # Aksi takdirde dosya boşsa 'gunluk_dosya' değişkeni tanımlanmadığı için NameError verir.
-            if os.path.exists(gunluk_dosya):
-                df_takip = pd.read_csv(gunluk_dosya)
-                st.dataframe(df_takip, use_container_width=True)
-                
-                csv = df_takip.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="📥 Tüm Verileri Yedekle (.csv)", 
-                    data=csv, 
-                    file_name='sude_takip_yedek.csv', 
-                    mime='text/csv'
-                )
-            else:
-                st.info("Sude henüz bir günü kapatmamış, liste boş.")
 
 
     st.error("İzinsiz giriş!")
