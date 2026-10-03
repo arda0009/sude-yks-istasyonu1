@@ -496,12 +496,12 @@ def c_panel():
     st.header("⚙ Arda'nın Gizli Paneli")
     sifre = st.text_input("Şifre:", type="password")
     
-    # 1. ŞİFRE DOĞRUYSA ÇALIŞACAK KISIM
     if sifre == "1905":
         st.success("Giriş Başarılı!")
         st.markdown("---")
         
-        tab_sinyal, tab_gorev, tab_veri = st.tabs(["🚨 Sinyal", "📝 Görev Ver", "📈 Veri Tablosu"])
+        # 4. Sekme eklendi: Sistem Ayarları
+        tab_sinyal, tab_gorev, tab_veri, tab_ayarlar = st.tabs(["🚨 Sinyal", "📝 Görev Ver", "📈 Veri Tablosu", "⚙️ Sistem Ayarları"])
         
         with tab_sinyal:
             st.subheader("🚨 Sude'ye Canlı Sinyal Gönder")
@@ -559,7 +559,31 @@ def c_panel():
             else:
                 st.info("Henüz grafik oluşturacak gün sonu verisi girilmemiş.")
                 
-    # 2. ŞİFRE YANLIŞSA (VE BOŞ DEĞİLSE) ÇALIŞACAK KISIM
+        # BÜTÜN VERİLERİ SIFIRLAMA BÖLÜMÜ
+        with tab_ayarlar:
+            st.subheader("⚠️ Tehlikeli Bölge")
+            st.write("Uygulamadaki tüm verileri silerek Google Drive'ı sıfırlar.")
+            
+            with st.expander("Bütün Verileri Sıfırla (DİKKAT!)"):
+                st.warning("Bu işlem geri alınamaz! Su, görev, konu, net, hayal ve günlük verilerinin hepsi kalıcı olarak silinecektir.")
+                onay = st.text_input("Silmek istediğine eminsen büyük harflerle SİL yaz:")
+                
+                if st.button("🔴 Tıklarsan Her Şey Uçar", type="primary"):
+                    if onay == "SİL":
+                        # Google Drive'daki tüm sekmelerin üstüne boş başlıklar yazarak sıfırlıyoruz
+                        save_df(pd.DataFrame(columns=["Tarih", "Bardak"]), "su_takip.csv", "Su")
+                        save_df(pd.DataFrame(columns=["Gorev", "Durum"]), "todo_listesi.csv", "Todo")
+                        save_df(pd.DataFrame(columns=["Tarih", "Baslama", "Bitis", "Saat", "Gunluk"]), "gunluk_ozet.csv", "Gunluk_Ozet")
+                        save_df(pd.DataFrame(columns=["Ders", "Konu", "Bitti"]), "konu_ilerleme.csv", "Konular")
+                        save_df(pd.DataFrame(columns=["Tarih", "Deneme Adı", "TYT Net"]), "deneme_netleri.csv", "Netler")
+                        save_df(pd.DataFrame(columns=["Tarih", "Hayal"]), "hayal_kumbarasi.csv", "Hayaller")
+                        save_df(pd.DataFrame(columns=["Gorev", "Odul", "Durum"]), "ozel_gorevler.csv", "Gorevler")
+                        
+                        st.success("Tüm veriler başarıyla sıfırlandı! Yeni bir başlangıca hazırsınız.")
+                        st.balloons()
+                    else:
+                        st.error("İşlemi onaylamak için kutucuğa tam olarak SİL yazmalısın.")
+
     elif sifre != "":
         st.error("İzinsiz giriş!")
 
