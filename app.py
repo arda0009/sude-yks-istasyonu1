@@ -722,7 +722,7 @@ if st.session_state['arayuz'] == 'sekmeler':
     with t1:
         s1, s2 = st.columns(2)
         with s1: c_karsilama(); c_todo(); c_su(); c_oduller()
-        with s2: c_pomodoro(); c_gunluk()
+        with s2: c_pomodoro(); c_gun_sonu()
     with t2: c_net_takibi(); c_konu_ilerleme(); c_kumbara()
     with t3: c_yapay_zeka()
     with t4: c_eglence()
