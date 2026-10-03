@@ -19,14 +19,23 @@ st.set_page_config(page_title="Sude'nin Çalışma Alanı", page_icon="🌻", la
 # --- BULUT SENKRONİZASYON (GOOGLE SHEETS) MİMARİSİ ---
 @st.cache_resource
 def get_gspread_client():
-    try:
-        if "GOOGLE_CREDENTIALS" in st.secrets:
-            creds_json = st.secrets["GOOGLE_CREDENTIALS"]
-            creds_dict = json.loads(creds_json)
-            return gspread.service_account_from_dict(creds_dict)
-    except Exception as e:
+    if "GOOGLE_CREDENTIALS" not in st.secrets:
+        st.error("🚨 HATA 1: Streamlit Secrets içinde 'GOOGLE_CREDENTIALS' bulunamadı! Adını yanlış yazmış olabilirsin.")
         return None
-    return None
+        
+    creds_json = st.secrets["GOOGLE_CREDENTIALS"]
+    
+    try:
+        creds_dict = json.loads(creds_json)
+    except Exception as e:
+        st.error(f"🚨 HATA 2: JSON Format Hatası! Secrets içine yapıştırdığın şifrede bozukluk var: {e}")
+        return None
+        
+    try:
+        return gspread.service_account_from_dict(creds_dict)
+    except Exception as e:
+        st.error(f"🚨 HATA 3: Yetki Hatası (Google şifreyi kabul etmedi): {e}")
+        return None
 
 def load_df(filename, ws_name, default_data):
     if not os.path.exists(filename):
