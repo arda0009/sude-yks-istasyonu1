@@ -633,11 +633,15 @@ def c_eglence():
     
     tab1, tab2, tab3, tab4 = st.tabs(["🤖 Yapay Zekaya Karşı XOX", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
     
-    # 1. YAPAY ZEKAYA KARŞI XOX OYUNU
+
     with tab1:
         st.subheader("🤖 Arda-Bot'a Karşı XOX")
+        
+        # Her iki değişkeni de BİRBİRİNDEN BAĞIMSIZ olarak kontrol ediyoruz
         if 'xox_board' not in st.session_state:
             st.session_state.xox_board = [""] * 9
+            
+        if 'xox_winner' not in st.session_state:
             st.session_state.xox_winner = None
             
         def check_winner(board):
