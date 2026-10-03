@@ -67,8 +67,11 @@ def save_df(df, filename, ws_name):
             df_cloud.fillna("", inplace=True) # Boş verilerin hata vermesini engelle
             ws.clear()
             ws.update(values=[df_cloud.columns.values.tolist()] + df_cloud.values.tolist())
-        except:
-            pass # Sude'yi API hata mesajlarıyla rahatsız etmemek için sessizce geç
+        except Exception as e:
+
+
+
+            st.error(f"Bulut Hatası: {e}")
 
 # --- SİSTEM DEĞİŞKENLERİ ---
 if 'tema' not in st.session_state: st.session_state['tema'] = 'Gündüz Bahçesi 🌻'
