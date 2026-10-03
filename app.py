@@ -68,6 +68,9 @@ def save_df(df, filename, ws_name):
             ws.clear()
             ws.update(values=[df_cloud.columns.values.tolist()] + df_cloud.values.tolist())
         except Exception as e:
+            st.error(f"🚨 Google Drive Yazma Hatası: {e}") # Hatayı yakalayıp ekrana basıyoruz
+    else:
+        st.error("🚨 Google Drive Bağlantısı Kurulamadı! (JSON şifresinde veya gspread kütüphanesinde sorun var)")
 
 
 
