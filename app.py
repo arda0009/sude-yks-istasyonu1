@@ -52,7 +52,33 @@ def load_df(filename, ws_name, default_data):
         return df
     else:
         return pd.read_csv(filename)
-
+def c_gun_sonu():
+    st.divider()
+    st.subheader("🌙 Gün Sonu Değerlendirmesi")
+    bugun_str = datetime.date.today().strftime("%d.%m.%Y")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        baslama = st.time_input("🌅 Derse Başlama Saati", value=datetime.time(9, 0))
+    with col2:
+        bitis = st.time_input("🌃 Dersi Bırakma Saati", value=datetime.time(18, 0))
+        
+    kac_saat = st.number_input("Bugün Toplam Kaç Saat Çalıştın?", min_value=0.0, max_value=24.0, step=0.5)
+    gunluk = st.text_area("Gizli Günlüğün (Bugün nasıl hissettin?):")
+    
+    if st.button("Günü Kaydet ve Uyumaya Git 💤", use_container_width=True):
+        df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
+        yeni_kayit = pd.DataFrame([{
+            "Tarih": bugun_str, 
+            "Baslama": baslama.strftime("%H:%M"), 
+            "Bitis": bitis.strftime("%H:%M"), 
+            "Saat": kac_saat, 
+            "Gunluk": gunluk
+        }])
+        df_gunluk = pd.concat([df_gunluk, yeni_kayit], ignore_index=True)
+        save_df(df_gunluk, "gunluk_ozet.csv", "Gunluk_Ozet")
+        st.success("Harika bir iş çıkardın! Tüm bilgilerin buluta otomatik kaydedildi. İyi uykular! 💖")
+        st.balloons()
 def save_df(df, filename, ws_name):
     df.to_csv(filename, index=False) # Lokale kaydet
     
