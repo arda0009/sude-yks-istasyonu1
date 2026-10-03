@@ -314,28 +314,32 @@ def c_pomodoro():
     st.markdown(f"""<div style="background-color: {card}; border: 2px dashed {border}; padding: 15px; border-radius: 10px; text-align: center; margin-top: 15px;"><h4 style="color: {hdr}; margin: 0;">⏱ Bugün: <span style="color:{hdr};">{st.session_state['toplam_calisilan_dakika']} Dakika</span></h4></div>""", unsafe_allow_html=True)
     components.html(f"""<style>body {{ background-color: {bg}; margin: 0; overflow: hidden; }}</style><div style="text-align: center; padding: 15px; background-color: {card}; border-radius: 10px; border: 2px solid {border};"><p style="color: {txt}; font-size: 13px; margin-bottom: 25px; margin-top:0;"><b>Stres anında çemberi izle:</b><br><span style="color:{hdr};">4sn Al - 7sn Tut - 8sn Ver</span></p><div style="position: relative; width: 80px; height: 80px; margin: 0 auto;"><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background-color: {btn}; border-radius: 50%; animation: breathe 19s infinite linear;"></div></div></div><style>@keyframes breathe {{ 0% {{ transform: translate(-50%, -50%) scale(1); background-color: {btn}; }} 21% {{ transform: translate(-50%, -50%) scale(3.5); background-color: {btn_hover}; }} 58% {{ transform: translate(-50%, -50%) scale(3.5); background-color: {border}; }} 100% {{ transform: translate(-50%, -50%) scale(1); background-color: {btn}; }} }}</style>""", height=200)
 
-def c_gunluk():
-    st.header("🌙 Günü Kapat & İç Dök")
-    df_gunluk = load_df("sude_genel_takip.csv", "Genel_Takip", {"Tarih": [], "Çalışma Saati": [], "İçilen Su": [], "Eksik Notları": [], "Günlük Notu": []})
-
-    with st.form("gunu_kapat_formu", clear_on_submit=True):
-        bugun = datetime.date.today().strftime("%d.%m.%Y"); st.write(f"**Tarih:** {bugun}")
-        tavsiye_saat = round(st.session_state['toplam_calisilan_dakika'] / 60.0, 2)
-        calisma_saati = st.number_input(f"Kaç Saat Çalıştın? (Sayaçta biriken: {tavsiye_saat} saat)", min_value=0.0, max_value=24.0, value=tavsiye_saat, step=0.5)
-        gunluk_not = st.text_area("Gizli Günlüğün (Bugün nasıl hissettin?):", placeholder="Bugün çok yoruldum ama...")
+def c_gun_sonu():
+    st.subheader("🌙 Gün Sonu Değerlendirmesi")
+    bugun_str = datetime.date.today().strftime("%d.%m.%Y")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        baslama = st.time_input("🌅 Derse Başlama Saati", value=datetime.time(9, 0))
+    with col2:
+        bitis = st.time_input("🌃 Dersi Bırakma Saati", value=datetime.time(18, 0))
         
-        if st.form_submit_button("Günü Kaydet ve Uyumaya Git 💤"):
-            mevcut_su = 0
-            if os.path.exists("su_takip.csv"):
-                try: 
-                    df_s = pd.read_csv("su_takip.csv")
-                    if df_s.iloc[0]["Tarih"] == bugun: mevcut_su = int(df_s.iloc[0]["Bardak"])
-                except: pass
-                
-            yeni_kayit = pd.DataFrame([{"Tarih": bugun, "Çalışma Saati": calisma_saati, "İçilen Su": mevcut_su, "Eksik Notları": "Kumbaradan Takip Ediliyor", "Günlük Notu": gunluk_not}])
-            df_gunluk = pd.concat([df_gunluk, yeni_kayit], ignore_index=True)
-            save_df(df_gunluk, "sude_genel_takip.csv", "Genel_Takip")
-            st.success("Harika bir iş çıkardın! Tüm bilgilerin buluta otomatik kaydedildi. 💖"); st.balloons()
+    kac_saat = st.number_input("Bugün Toplam Kaç Saat Çalıştın?", min_value=0.0, max_value=24.0, step=0.5)
+    gunluk = st.text_area("Gizli Günlüğün (Bugün nasıl hissettin?):")
+    
+    if st.button("Günü Kaydet ve Uyumaya Git 💤"):
+        df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
+        yeni_kayit = pd.DataFrame([{
+            "Tarih": bugun_str, 
+            "Baslama": baslama.strftime("%H:%M"), 
+            "Bitis": bitis.strftime("%H:%M"), 
+            "Saat": kac_saat, 
+            "Gunluk": gunluk
+        }])
+        df_gunluk = pd.concat([df_gunluk, yeni_kayit], ignore_index=True)
+        save_df(df_gunluk, "gunluk_ozet.csv", "Gunluk_Ozet")
+        st.success("Tüm bilgilerin buluta otomatik kaydedildi. İyi uykular! 💖")
+        st.balloons()
 
 def c_net_takibi():
     st.header("📈 Net Takibi ve Analiz")
@@ -502,6 +506,25 @@ def c_panel():
                     st.success("Görev başarıyla Sude'nin Ana Sayfasına gönderildi!")
                     
         with tab_veri:
+            def c_panel_grafikler():
+    st.header("📊 Yönetici Paneli: Sude'nin Performans Analizi")
+    df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
+    
+    if not df_gunluk.empty:
+        # Saat verisini grafiğe uygun sayısal formata çeviriyoruz
+        df_grafik = df_gunluk.copy()
+        df_grafik["Saat"] = pd.to_numeric(df_grafik["Saat"], errors='coerce').fillna(0)
+        
+        s1, s2 = st.columns(2)
+        with s1:
+            st.subheader("📈 Günlük Çalışma Süreleri")
+            st.bar_chart(data=df_grafik.set_index("Tarih")["Saat"], color="#ff4b4b")
+            
+        with s2:
+            st.subheader("⏰ Başlama ve Bitiş Raporu")
+            st.dataframe(df_grafik[["Tarih", "Baslama", "Bitis", "Saat"]], use_container_width=True)
+    else:
+        st.info("Henüz grafik oluşturacak yeterli gün sonu verisi girilmemiş.")
             st.subheader("Sude'nin Günlük İstatistikleri")
             gunluk_dosya = "sude_genel_takip.csv"
             if os.path.exists(gunluk_dosya):
@@ -564,6 +587,99 @@ def c_yapay_zeka():
                     for h in hatalar: st.write(h)
 
 def c_eglence():
+    def c_hayal_kumbarasi():
+        def c_eglence_ve_meditasyon():
+    st.header("🎮 Mola & Meditasyon Merkezi")
+    tab1, tab2, tab3, tab4 = st.tabs(["❌⭕ XOX Oyunu", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
+    
+    # 1. XOX OYUNU
+    with tab1:
+        st.subheader("Klasik XOX (Tic-Tac-Toe)")
+        if 'xox_board' not in st.session_state:
+            st.session_state.xox_board = [""] * 9
+            st.session_state.xox_turn = "X"
+            
+        def reset_xox():
+            st.session_state.xox_board = [""] * 9
+            st.session_state.xox_turn = "X"
+
+        col1, col2, col3 = st.columns([1,1,1])
+        for i in range(9):
+            with [col1, col2, col3][i % 3]:
+                if st.button(st.session_state.xox_board[i] if st.session_state.xox_board[i] else "⬜", key=f"xox_{i}", use_container_width=True):
+                    if st.session_state.xox_board[i] == "":
+                        st.session_state.xox_board[i] = st.session_state.xox_turn
+                        st.session_state.xox_turn = "O" if st.session_state.xox_turn == "X" else "X"
+                        st.rerun()
+        if st.button("Oyunu Sıfırla 🔄"):
+            reset_xox()
+            st.rerun()
+
+    # 2. SANAL BALONCUK NAYLONU (Stres Atmak İçin)
+    with tab2:
+        st.subheader("🫧 Sınırsız Baloncuk Patlat")
+        st.caption("Stresini atmak için kutucuklara tıkla, hepsi bitince yenile!")
+        cols = st.columns(6)
+        for i in range(30):
+            with cols[i % 6]:
+                st.checkbox("Pop!", key=f"bubble_{i}")
+                
+    # 3. RENK TERAPİSİ (Zihinsel Rahatlama)
+    with tab3:
+        st.subheader("🧘‍♀️ Zihinsel Molan")
+        st.write("Derslerin stresini arkada bırakmak için butona bas ve sadece ekrandaki renge odaklanarak derin bir nefes al.")
+        import random
+        if st.button("Bana Bir Renk ve Motivasyon Ver 🎨"):
+            renkler = ["#A2D2FF", "#BDE0FE", "#FFAFCC", "#FFC8DD", "#CDB4DB", "#8ECAE6", "#219EBC", "#84A59D"]
+            sozler = [
+                "Sen sandığından çok daha güçlüsün.",
+                "Şu an elinden gelenin en iyisini yapıyorsun, bu kadarı yeterli.",
+                "Bugün çözdüğün her zor soru, seni hedefine bir adım daha yaklaştırdı.",
+                "Gözlerini kapat, derin bir nefes al ve yapabileceğine inan.",
+                "Zorlanman pes etmen gerektiği anlamına gelmez, geliştiğin anlamına gelir."
+            ]
+            st.markdown(f"""
+            <div style="background-color: {random.choice(renkler)}; padding: 50px; border-radius: 20px; text-align: center; color: #333;">
+                <h3 style="margin:0;">{random.choice(sozler)}</h3>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # 4. SAYI TAHMİNİ (Kafayı Dağıtmak İçin)
+    with tab4:
+        st.subheader("🎯 Aklımdaki Sayıyı Bul")
+        if 'gizli_sayi' not in st.session_state:
+            st.session_state.gizli_sayi = random.randint(1, 50)
+            
+        tahmin = st.number_input("1 ile 50 arasında bir sayı tuttum. Sence kaç?", min_value=1, max_value=50)
+        if st.button("Tahmin Et"):
+            if tahmin < st.session_state.gizli_sayi:
+                st.warning("Biraz daha yukarı! ⬆️")
+            elif tahmin > st.session_state.gizli_sayi:
+                st.warning("Biraz daha aşağı! ⬇️")
+            else:
+                st.success("Tebrikler! 🎉 Doğru bildin!")
+                st.balloons()
+                st.session_state.gizli_sayi = random.randint(1, 50) # Yeni sayı tut
+    st.subheader("☁️ Sınav Sonrası Hayal Kumbarası")
+    st.caption("YKS bittiğinde, üniversiteye geçtiğinde veya hemen yarın... Gerçekleştirmek istediğin her şeyi buraya at!")
+    
+    df_hayal = load_df("hayal_kumbarasi.csv", "Hayaller", {"Tarih": [], "Hayal": []})
+    
+    with st.form("hayal_form", clear_on_submit=True):
+        yeni_hayal = st.text_input("Ne yapmak istiyorsun?")
+        ekle = st.form_submit_button("Kumbaraya At 🌟")
+        
+        if ekle and yeni_hayal:
+            yeni_kayit = pd.DataFrame([{"Tarih": datetime.date.today().strftime("%d.%m.%Y"), "Hayal": yeni_hayal}])
+            df_hayal = pd.concat([df_hayal, yeni_kayit], ignore_index=True)
+            save_df(df_hayal, "hayal_kumbarasi.csv", "Hayaller")
+            st.success("Hayalin kumbaraya eklendi!")
+            st.rerun()
+            
+    st.divider()
+    if not df_hayal.empty:
+        for index, row in df_hayal.iloc[::-1].iterrows(): # En yeniler en üstte
+            st.info(f"✨ {row['Hayal']}")
     st.header("🕹️ Eğlence & Mola Merkezi")
     
     st.subheader("📺 Sude'nin Favori Kanalları")
@@ -576,7 +692,7 @@ def c_eglence():
     tab1, tab2 = st.tabs(["🎈 Balon Patlat", "🧠 Zihin Açıcı Matematik"])
     
     with tab1:
-        st.write("Sese Dikkat! 💥 Artık %100 her tarayıcıda çalışıyor.")
+        st.write("LOVEE YOUU.")
         bubble_html = f"""
         <style>
         body {{ background-color: {bg}; margin: 0; padding: 0; overflow: hidden; }}
