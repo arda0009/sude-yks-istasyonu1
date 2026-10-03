@@ -773,7 +773,7 @@ def c_eglence():
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### 🔴 RRaene")
-            st.markdown("[Kanalı Ziyaret Et](https://www.youtube.com/@RRaene)", unsafe_allow_html=True)
+            st.markdown("[Kanalı Ziyaret Et](https://www.youtube.com/@RRaenee)", unsafe_allow_html=True)
             
             st.markdown("### 🟢 Bakır Kertenkele")
             st.markdown("[YouTube'da Ara / Aç](https://www.youtube.com/results?search_query=bakir+kertenkele)", unsafe_allow_html=True)
