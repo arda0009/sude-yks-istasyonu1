@@ -560,8 +560,6 @@ def c_panel():
                 st.info("Sude henüz bir günü kapatmamış, liste boş.")
 
 
-# elif ana şifre kontrol if'i ile aynı hizada olmalı
-elif sifre:
     st.error("İzinsiz giriş!")
 def c_yapay_zeka():
     st.header("🤖 YKS Motivasyon & Çalışma Asistanı")
