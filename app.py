@@ -507,10 +507,10 @@ def c_panel():
                     
         with tab_veri:
     
-    st.header("📊 Yönetici Paneli: Sude'nin Performans Analizi")
-    df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
+            st.header("📊 Yönetici Paneli: Sude'nin Performans Analizi")
+            df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
     
-    if not df_gunluk.empty:
+            if not df_gunluk.empty:
         
             st.subheader("Sude'nin Günlük İstatistikleri")
             gunluk_dosya = "sude_genel_takip.csv"
