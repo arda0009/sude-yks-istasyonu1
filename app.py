@@ -467,8 +467,9 @@ def c_muzik():
     components.html(f"""<style>body {{ background-color: {bg}; margin: 0; padding: 0; overflow: hidden; }}</style><iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/0zHr4z4SfUeKZOXv3rxVIV?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>""", height=360)
 
 def c_panel():
-    st.header("⚙️ Arda'nın Gizli Paneli")
+    st.header("⚙️️ Arda'nın Gizli Paneli")
     sifre = st.text_input("Şifre:", type="password")
+    
     if sifre == "1905":
         st.success("Giriş Başarılı!")
         st.markdown("---")
@@ -483,12 +484,15 @@ def c_panel():
                  if st.form_submit_button("Sinyali Gönder 🚀") and sinyal_mesaji.strip():
                      s_data = {"aktif": True, "mesaj": sinyal_mesaji.strip()}
                      try:
+                         import json
                          with open(signal_dosya, "w", encoding="utf-8") as f: json.dump(s_data, f)
                      except: pass
                      st.success("Sinyal Sude'ye iletildi! ✨")
             if st.button("Sinyali İptal Et / Kapat 🛑"):
+                import os
                 if os.path.exists(signal_dosya):
                     try:
+                        import json
                         with open(signal_dosya, "w", encoding="utf-8") as f: json.dump({"aktif": False, "mesaj": ""}, f)
                     except: pass
                     st.info("Sinyal kapatıldı.")
@@ -504,6 +508,31 @@ def c_panel():
                     df_gorev = pd.concat([df_gorev, pd.DataFrame([{"Gorev": yeni_gorev.strip(), "Odul": odul.strip(), "Durum": "Bekliyor"}])], ignore_index=True)
                     save_df(df_gorev, "ozel_gorevler.csv", "Gorevler")
                     st.success("Görev başarıyla Sude'nin Ana Sayfasına gönderildi!")
+
+        # YENİ EKLENEN GRAFİK VE GÜNLÜK BÖLÜMÜ
+        with tab_veri:
+            st.subheader("📈 Sude'nin Performans Grafikleri ve Günlüğü")
+            df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
+            
+            if not df_gunluk.empty:
+                df_grafik = df_gunluk.copy()
+                # Saati matematiksel grafiğe dökebilmek için metinden sayıya çeviriyoruz
+                df_grafik["Saat"] = pd.to_numeric(df_grafik["Saat"], errors='coerce').fillna(0)
+                
+                s1, s2 = st.columns(2)
+                with s1:
+                    st.write("📊 **Günlük Çalışma Süreleri (Saat)**")
+                    st.bar_chart(data=df_grafik.set_index("Tarih")["Saat"], color="#ff4b4b")
+                    
+                with s2:
+                    st.write("⏰ **Başlama ve Bitiş Raporu**")
+                    st.dataframe(df_grafik[["Tarih", "Baslama", "Bitis", "Saat"]], use_container_width=True)
+                    
+                st.divider()
+                st.write("📓 **Sude'nin Gizli Günlüğü**")
+                st.dataframe(df_grafik[["Tarih", "Gunluk"]], use_container_width=True)
+            else:
+                st.info("Henüz grafik oluşturacak gün sonu verisi girilmemiş.")
                     
 # Muhtemelen öncesinde "if girilen_sifre == dogru_sifre:" gibi bir ana blok var
     with tab_veri:
