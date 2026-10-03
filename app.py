@@ -503,26 +503,36 @@ def c_panel():
         # 4. Sekme eklendi: Sistem Ayarları
         tab_sinyal, tab_gorev, tab_veri, tab_ayarlar = st.tabs(["🚨 Sinyal", "📝 Görev Ver", "📈 Veri Tablosu", "⚙️ Sistem Ayarları"])
         
-        with tab_sinyal:
-            st.subheader("🚨 Sude'ye Canlı Sinyal Gönder")
-            signal_dosya = "ardadan_mesaj.json"
-            with st.form("sinyal_formu"):
-                 sinyal_mesaji = st.text_input("Sude'ye İletilecek Mesaj:", placeholder="Örn: Tablette mola verme zamanı! ☕")
-                 if st.form_submit_button("Sinyali Gönder 🚀") and sinyal_mesaji.strip():
-                     s_data = {"aktif": True, "mesaj": sinyal_mesaji.strip()}
-                     try:
-                         import json
-                         with open(signal_dosya, "w", encoding="utf-8") as f: json.dump(s_data, f)
-                     except: pass
-                     st.success("Sinyal Sude'ye iletildi! ✨")
-            if st.button("Sinyali İptal Et / Kapat 🛑"):
-                import os
-                if os.path.exists(signal_dosya):
-                    try:
-                        import json
-                        with open(signal_dosya, "w", encoding="utf-8") as f: json.dump({"aktif": False, "mesaj": ""}, f)
-                    except: pass
-                    st.info("Sinyal kapatıldı.")
+        # BÜTÜN VERİLERİ SIFIRLAMA BÖLÜMÜ
+        with tab_ayarlar:
+            st.subheader("⚠️ Tehlikeli Bölge")
+            st.write("Uygulamadaki tüm verileri silerek Google Drive'ı sıfırlar.")
+            
+            with st.expander("Bütün Verileri Sıfırla (DİKKAT!)"):
+                st.warning("Bu işlem geri alınamaz! Su, görev, konu, net, hayal ve günlük verilerinin hepsi kalıcı olarak silinecektir.")
+                onay = st.text_input("Silmek istediğine eminsen büyük harflerle SİL yaz:")
+                
+                if st.button("🔴 Tıklarsan Her Şey Uçar", type="primary"):
+                    if onay == "SİL":
+                        # Orijinal başlıklarını BOZMADAN sadece içindeki verileri silen Akıllı Sıfırlama
+                        sekmeler = [
+                            ("su_takip.csv", "Su"), ("todo_listesi.csv", "Todo"), 
+                            ("gunluk_ozet.csv", "Gunluk_Ozet"), ("konu_ilerleme.csv", "Konular"), 
+                            ("deneme_netleri.csv", "Netler"), ("hayal_kumbarasi.csv", "Hayaller"), 
+                            ("ozel_gorevler.csv", "Gorevler")
+                        ]
+                        
+                        for dosya, sekme in sekmeler:
+                            mevcut_df = load_df(dosya, sekme, {})
+                            if not mevcut_df.empty:
+                                # Mevcut sütun başlıklarını kopyala, içini boş bırak ve kaydet
+                                bos_df = pd.DataFrame(columns=mevcut_df.columns)
+                                save_df(bos_df, dosya, sekme)
+                                
+                        st.success("Tüm veriler başarıyla sıfırlandı! Yeni bir başlangıca hazırsınız.")
+                        st.balloons()
+                    else:
+                        st.error("İşlemi onaylamak için kutucuğa tam olarak SİL yazmalısın.")
                     
         with tab_gorev:
             st.subheader("Sude'ye Özel Görev Tanımla")
