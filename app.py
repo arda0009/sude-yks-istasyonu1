@@ -511,20 +511,7 @@ def c_panel():
     df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
     
     if not df_gunluk.empty:
-        # Saat verisini grafiğe uygun sayısal formata çeviriyoruz
-        df_grafik = df_gunluk.copy()
-        df_grafik["Saat"] = pd.to_numeric(df_grafik["Saat"], errors='coerce').fillna(0)
         
-        s1, s2 = st.columns(2)
-        with s1:
-            st.subheader("📈 Günlük Çalışma Süreleri")
-            st.bar_chart(data=df_grafik.set_index("Tarih")["Saat"], color="#ff4b4b")
-            
-        with s2:
-            st.subheader("⏰ Başlama ve Bitiş Raporu")
-            st.dataframe(df_grafik[["Tarih", "Baslama", "Bitis", "Saat"]], use_container_width=True)
-    else:
-        st.info("Henüz grafik oluşturacak yeterli gün sonu verisi girilmemiş.")
             st.subheader("Sude'nin Günlük İstatistikleri")
             gunluk_dosya = "sude_genel_takip.csv"
             if os.path.exists(gunluk_dosya):
