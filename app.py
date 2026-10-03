@@ -458,7 +458,7 @@ def c_konu_ilerleme():
         for idx, row in df_konu[df_konu["Ders"] == secilen_ders].iterrows():
             durum = st.checkbox(row["Konu"], value=row["Bitti"], key=f"konu_{idx}")
             if durum != row["Bitti"]:
-                df_konu.at[idx, "Bitti"] = durum
+                df_konu.at[idx, "Bitti"] = str(durum)
                 save_df(df_konu, "konu_ilerleme.csv", "Konular")
                 st.rerun()
 
