@@ -14,13 +14,12 @@ except ImportError:
 import requests 
 
 # Tarayıcı sekmesinde görünecek başlık
-st.set_page_config(page_title="Sude'nin Çalışma Alanı", page_icon="<3", layout="wide")
+st.set_page_config(page_title="Sude'nin Çalışma Alanı", page_icon="💖", layout="wide")
 
 # --- BULUT SENKRONİZASYON (GOOGLE SHEETS) MİMARİSİ ---
 @st.cache_resource
 def get_gspread_client():
     try:
-        # Doğrudan Streamlit formatını kullanıyoruz (Bütün JSON hatalarını çöpe attık)
         if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
             return gspread.service_account_from_dict(creds_dict)
@@ -52,33 +51,7 @@ def load_df(filename, ws_name, default_data):
         return df
     else:
         return pd.read_csv(filename)
-def c_gun_sonu():
-    st.divider()
-    st.subheader("🌙 Gün Sonu Değerlendirmesi")
-    bugun_str = datetime.date.today().strftime("%d.%m.%Y")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        baslama = st.time_input("🌅 Derse Başlama Saati", value=datetime.time(9, 0))
-    with col2:
-        bitis = st.time_input("🌃 Dersi Bırakma Saati", value=datetime.time(18, 0))
-        
-    kac_saat = st.number_input("Bugün Toplam Kaç Saat Çalıştın?", min_value=0.0, max_value=24.0, step=0.5)
-    gunluk = st.text_area("Gizli Günlüğün (Bugün nasıl hissettin?):")
-    
-    if st.button("Günü Kaydet ve Uyumaya Git 💤", use_container_width=True):
-        df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
-        yeni_kayit = pd.DataFrame([{
-            "Tarih": bugun_str, 
-            "Baslama": baslama.strftime("%H:%M"), 
-            "Bitis": bitis.strftime("%H:%M"), 
-            "Saat": kac_saat, 
-            "Gunluk": gunluk
-        }])
-        df_gunluk = pd.concat([df_gunluk, yeni_kayit], ignore_index=True)
-        save_df(df_gunluk, "gunluk_ozet.csv", "Gunluk_Ozet")
-        st.success("Harika bir iş çıkardın! Tüm bilgilerin buluta otomatik kaydedildi. İyi uykular! 💖")
-        st.balloons()
+
 def save_df(df, filename, ws_name):
     df.to_csv(filename, index=False) # Lokale kaydet
     
@@ -101,13 +74,13 @@ def save_df(df, filename, ws_name):
             ws.clear()
             ws.update(veri_listesi) 
             
-            # Başarılı olursa ekrana pop-up mesaj basacak
-            st.toast(f"✅ {ws_name} verisi Google Drive'a başarıyla yazıldı!") 
+            st.toast(f"✅ {ws_name} verisi buluta başarıyla yazıldı!") 
             
         except Exception as e:
             st.error(f"🚨 Yazma Hatası: {e}")
     else:
         st.error("🚨 Bağlantı Hatası: Sunucu Google'a bağlanamadı.")
+
 # --- SİSTEM DEĞİŞKENLERİ ---
 if 'tema' not in st.session_state: st.session_state['tema'] = 'Gündüz Bahçesi 🌻'
 if 'arayuz' not in st.session_state: st.session_state['arayuz'] = 'sekmeler'
@@ -198,21 +171,25 @@ def c_todo():
         with c1: yeni_gorev = st.text_input("Yeni görev:", placeholder="Soru çözümü vb...", label_visibility="collapsed")
         with c2: 
             if st.form_submit_button("Ekle ➕") and yeni_gorev.strip():
-                df_todo = pd.concat([df_todo, pd.DataFrame([{"Görev": yeni_gorev.strip(), "Tamamlandi": False}])], ignore_index=True)
+                df_todo = pd.concat([df_todo, pd.DataFrame([{"Görev": yeni_gorev.strip(), "Tamamlandi": "False"}])], ignore_index=True)
                 save_df(df_todo, "todo_listesi.csv", "Todo")
                 st.rerun()
                 
     if len(df_todo) > 0:
         st.write("")
         for idx, row in df_todo.iterrows():
-            if not row["Tamamlandi"]:
-                if st.checkbox(row["Görev"], key=f"aktif_{idx}"):
-                    df_todo.at[idx, "Tamamlandi"] = True
+            is_done = str(row.get("Tamamlandi", "False")).lower() in ["true", "1", "yes", "evet"]
+            if not is_done:
+                if st.checkbox(str(row.get("Görev", "")), key=f"aktif_{idx}"):
+                    df_todo.at[idx, "Tamamlandi"] = "True"
                     save_df(df_todo, "todo_listesi.csv", "Todo")
                     st.balloons(); st.rerun()
-            else: st.checkbox(f"~~{row['Görev']}~~", value=True, disabled=True, key=f"pasif_{idx}")
-        if df_todo["Tamamlandi"].any() and st.button("🧹 Temizle"):
-            df_todo = df_todo[df_todo["Tamamlandi"] == False]
+            else: 
+                st.checkbox(f"~~{row.get('Görev', '')}~~", value=True, disabled=True, key=f"pasif_{idx}")
+        
+        bitti_mask = df_todo["Tamamlandi"].astype(str).str.lower().isin(["true", "1", "yes", "evet"])
+        if bitti_mask.any() and st.button("🧹 Temizle"):
+            df_todo = df_todo[~bitti_mask]
             save_df(df_todo, "todo_listesi.csv", "Todo")
             st.rerun()
     else: st.info("Listen şu an boş."); st.write("---")
@@ -222,13 +199,11 @@ def c_su():
     bugun_str = datetime.date.today().strftime("%d.%m.%Y")
     df_su = load_df("su_takip.csv", "Su", {"Tarih": [bugun_str], "Bardak": [0]})
     
-    # KRİTİK DÜZELTME: Tablo boşsa veya tarih uyuşmuyorsa çökmesini engelliyoruz
-    if df_su.empty or df_su.iloc[0]["Tarih"] != bugun_str: 
+    if df_su.empty or df_su.iloc[-1]["Tarih"] != bugun_str: 
         df_su = pd.DataFrame([{"Tarih": bugun_str, "Bardak": 0}])
         save_df(df_su, "su_takip.csv", "Su")
         
-    # Tablo artık kesinlikle dolu olduğu için güvenle okuyabiliriz
-    mevcut_su = int(df_su.iloc[0]["Bardak"])
+    mevcut_su = int(df_su.iloc[-1]["Bardak"])
     s1, s2 = st.columns([2, 1])
     
     with s1:
@@ -238,7 +213,7 @@ def c_su():
         
     with s2:
         if st.button("İçtim 🚰", use_container_width=True):
-            df_su.at[0, "Bardak"] = mevcut_su + 1
+            df_su.at[df_su.index[-1], "Bardak"] = mevcut_su + 1
             save_df(df_su, "su_takip.csv", "Su")
             if mevcut_su + 1 == 8: 
                 st.success("Hedef tamam!")
@@ -372,10 +347,12 @@ def c_net_takibi():
     hedef_universite = "Güneş Üniversitesi Tıp Fakültesi"; hedef_tyt = 105.0; hedef_ayt = 64.0
     
     df_netler = load_df("deneme_netleri.csv", "Netler", {"Deneme Adı": [], "Sınav": [], "Türkçe/Edebiyat": [], "Matematik": [], "Sosyal": [], "Fen": [], "Toplam Net": []})
-    if "Sınav" not in df_netler.columns: 
-        df_netler["Sınav"] = ""
-    if "Toplam Net" not in df_netler.columns: 
-        df_netler["Toplam Net"] = 0.0
+    
+    # Tüm sütunların varlığından emin oluyoruz
+    eksik_sutunlar = ["Deneme Adı", "Sınav", "Türkçe/Edebiyat", "Matematik", "Sosyal", "Fen", "Toplam Net"]
+    for col in eksik_sutunlar:
+        if col not in df_netler.columns:
+            df_netler[col] = 0.0 if col not in ["Deneme Adı", "Sınav"] else ""
         
     rekor_tyt = df_netler[df_netler["Sınav"] == "TYT"]["Toplam Net"].max() if not df_netler[df_netler["Sınav"] == "TYT"].empty else 0.0
     rekor_ayt = df_netler[df_netler["Sınav"] == "AYT"]["Toplam Net"].max() if not df_netler[df_netler["Sınav"] == "AYT"].empty else 0.0
@@ -437,21 +414,20 @@ def c_konu_ilerleme():
     st.divider()
     st.subheader("📚 Müfredat & Konu İlerleme Durumu")
     varsayilan_konular = [
-        {"Ders": "Türkçe", "Konu": "Sözcükte Anlam", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Cümlede Anlam", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Paragrafta Anlam", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Anlatım Biçimleri", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Ses Bilgisi", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Yazım Kuralları", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Noktalama İşaretleri", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Sözcükte Yapı", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Sözcük Türleri", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Edat-Bağlaç-Ünlem", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Fiil-Ek Fiil", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Fiilimsi", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Fiilde Çatı", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Deyim ve Atasözü", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Cümlenin Öğeleri", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Cümle Türleri", "Bitti": False}, {"Ders": "Türkçe", "Konu": "Anlatım Bozuklukları", "Bitti": False},
-        {"Ders": "Matematik", "Konu": "Temel Kavramlar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Sayı Basamakları", "Bitti": False}, {"Ders": "Matematik", "Konu": "Bölme ve Bölünebilme", "Bitti": False}, {"Ders": "Matematik", "Konu": "EBOB-EKOK", "Bitti": False}, {"Ders": "Matematik", "Konu": "Rasyonel Sayılar-Ondalık Sayılar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Basit Eşitsizlikler", "Bitti": False}, {"Ders": "Matematik", "Konu": "Mutlak Değer", "Bitti": False}, {"Ders": "Matematik", "Konu": "Üslü Sayılar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Köklü Sayılar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Çarpanlara Ayırma", "Bitti": False}, {"Ders": "Matematik", "Konu": "Oran Orantı", "Bitti": False}, {"Ders": "Matematik", "Konu": "Denklem Çözme", "Bitti": False}, {"Ders": "Matematik", "Konu": "Problemler", "Bitti": False}, {"Ders": "Matematik", "Konu": "Kümeler-Kartezyen Çarpımı", "Bitti": False}, {"Ders": "Matematik", "Konu": "Fonksiyonlar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Permütasyon", "Bitti": False}, {"Ders": "Matematik", "Konu": "Kombinasyon", "Bitti": False}, {"Ders": "Matematik", "Konu": "Binom", "Bitti": False}, {"Ders": "Matematik", "Konu": "Olasılık", "Bitti": False}, {"Ders": "Matematik", "Konu": "İstatistik", "Bitti": False}, {"Ders": "Matematik", "Konu": "2. Dereceden Denklemler", "Bitti": False}, {"Ders": "Matematik", "Konu": "Karmaşık Sayılar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Polinomlar", "Bitti": False}, {"Ders": "Matematik", "Konu": "Mantık", "Bitti": False}, {"Ders": "Matematik", "Konu": "Veri Analizi", "Bitti": False},
-        {"Ders": "Geometri", "Konu": "Doğruda ve Üçgende Açılar", "Bitti": False}, {"Ders": "Geometri", "Konu": "Üçgende Açı-Kenar Bağıntıları", "Bitti": False}, {"Ders": "Geometri", "Konu": "Üçgende Benzerlik", "Bitti": False}, {"Ders": "Geometri", "Konu": "Üçgende Açıortay-Kenarortay", "Bitti": False}, {"Ders": "Geometri", "Konu": "Dik Üçgen", "Bitti": False}, {"Ders": "Geometri", "Konu": "İkizkenar Üçgen", "Bitti": False}, {"Ders": "Geometri", "Konu": "Eşkenar Üçgen", "Bitti": False}, {"Ders": "Geometri", "Konu": "Üçgende Alan", "Bitti": False}, {"Ders": "Geometri", "Konu": "Çokgenler", "Bitti": False}, {"Ders": "Geometri", "Konu": "Dörtgenler", "Bitti": False}, {"Ders": "Geometri", "Konu": "Yamuk-Paralelkenar", "Bitti": False}, {"Ders": "Geometri", "Konu": "Eşkenar Dörtgen", "Bitti": False}, {"Ders": "Geometri", "Konu": "Dikdörtgen", "Bitti": False}, {"Ders": "Geometri", "Konu": "Kare", "Bitti": False}, {"Ders": "Geometri", "Konu": "Deltoid", "Bitti": False}, {"Ders": "Geometri", "Konu": "Çemberde Açı", "Bitti": False}, {"Ders": "Geometri", "Konu": "Çemberde Uzunluk", "Bitti": False}, {"Ders": "Geometri", "Konu": "Dairenin Çevresi ve Alanı", "Bitti": False}, {"Ders": "Geometri", "Konu": "Doğrunun Analitik İncelenmesi", "Bitti": False}, {"Ders": "Geometri", "Konu": "Çemberin Analitik İncelenmesi", "Bitti": False}, {"Ders": "Geometri", "Konu": "Katı Cisimler", "Bitti": False},
-        {"Ders": "Tarih", "Konu": "Tarih Bilimine Giriş", "Bitti": False}, {"Ders": "Tarih", "Konu": "Uygarlığın Doğuşu ve İlk Uygarlıklar", "Bitti": False}, {"Ders": "Tarih", "Konu": "İlk Türk Devletleri", "Bitti": False}, {"Ders": "Tarih", "Konu": "İslam Tarihi ve Uygarlığı", "Bitti": False}, {"Ders": "Tarih", "Konu": "Türk-İslam Devletleri", "Bitti": False}, {"Ders": "Tarih", "Konu": "Türkler'in İslamiyeti Kabulü", "Bitti": False}, {"Ders": "Tarih", "Konu": "Türkiye Tarihi", "Bitti": False}, {"Ders": "Tarih", "Konu": "Beylikten Devlete (1300-1453)", "Bitti": False}, {"Ders": "Tarih", "Konu": "Dünya Gücü: Osmanlı Devleti", "Bitti": False}, {"Ders": "Tarih", "Konu": "Osmanlı Duraklama Dönemi", "Bitti": False}, {"Ders": "Tarih", "Konu": "Gerileme Devri (1699 – 1792)", "Bitti": False}, {"Ders": "Tarih", "Konu": "Arayış Yılları (17. Yüzyıl)", "Bitti": False}, {"Ders": "Tarih", "Konu": "Avrupa ve Osmanlı Devleti (18. Yüzyıl)", "Bitti": False}, {"Ders": "Tarih", "Konu": "En Uzun Yüzyıl (1800-1922)", "Bitti": False}, {"Ders": "Tarih", "Konu": "20. Yüzyıl Başlarında Osmanlı Devleti", "Bitti": False}, {"Ders": "Tarih", "Konu": "XIX. YY Osmanlı Devleti", "Bitti": False}, {"Ders": "Tarih", "Konu": "1. Dünya Savaşı", "Bitti": False}, {"Ders": "Tarih", "Konu": "Kurtuluş Savaşında Cepheler", "Bitti": False}, {"Ders": "Tarih", "Konu": "Türk İnkılabı", "Bitti": False}, {"Ders": "Tarih", "Konu": "Atatürkçülük ve Atatürk İlkeleri", "Bitti": False}, {"Ders": "Tarih", "Konu": "Türk Dış Politikası", "Bitti": False},
-        {"Ders": "Coğrafya", "Konu": "İnsan ve Doğa", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Dünya'nın Şekli ve Hareketleri", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Coğrafi Konum", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Harita Bilgisi", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Atmosfer ve Sıcaklık", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "İklimler", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Basınç ve Rüzgarlar", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Nem, Yağış ve Buharlaşma", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "İç Kuvvetler / Dış Kuvvetler", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Su – Toprak ve Bitkiler", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Nüfus-Göç-Yerleşme", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Türkiye'nin Yer Şekilleri", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Ekonomik Faaliyetler", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Bölgeler ve Ülkeler", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Uluslararası Ulaşım Hatları", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Çevre ve Toplum", "Bitti": False}, {"Ders": "Coğrafya", "Konu": "Doğal Afetler", "Bitti": False},
-        {"Ders": "Fizik", "Konu": "Fizik Bilimine Giriş", "Bitti": False}, {"Ders": "Fizik", "Konu": "Madde ve Özellikleri", "Bitti": False}, {"Ders": "Fizik", "Konu": "Kuvvet ve Hareket", "Bitti": False}, {"Ders": "Fizik", "Konu": "İş, Güç ve Enerji", "Bitti": False}, {"Ders": "Fizik", "Konu": "Isı, Sıcaklık ve Genleşme", "Bitti": False}, {"Ders": "Fizik", "Konu": "Basınç", "Bitti": False}, {"Ders": "Fizik", "Konu": "Kaldırma Kuvveti", "Bitti": False}, {"Ders": "Fizik", "Konu": "Elektrik ve Manyetizma", "Bitti": False}, {"Ders": "Fizik", "Konu": "Dalgalar", "Bitti": False}, {"Ders": "Fizik", "Konu": "Optik", "Bitti": False},
-        {"Ders": "Kimya", "Konu": "Kimya Bilimi", "Bitti": False}, {"Ders": "Kimya", "Konu": "Atom ve Periyodik Sistem", "Bitti": False}, {"Ders": "Kimya", "Konu": "Kimyasal Türler Arası Etkileşimler", "Bitti": False}, {"Ders": "Kimya", "Konu": "Maddenin Halleri", "Bitti": False}, {"Ders": "Kimya", "Konu": "Doğa ve Kimya", "Bitti": False}, {"Ders": "Kimya", "Konu": "Kimyanın Temel Kanunları", "Bitti": False}, {"Ders": "Kimya", "Konu": "Karışımlar", "Bitti": False}, {"Ders": "Kimya", "Konu": "Asitler-Bazlar ve Tuzlar", "Bitti": False}, {"Ders": "Kimya", "Konu": "Kimya Her Yerde", "Bitti": False},
-        {"Ders": "Biyoloji", "Konu": "Yaşam Bilimi Biyoloji", "Bitti": False}, {"Ders": "Biyoloji", "Konu": "Hücre", "Bitti": False}, {"Ders": "Biyoloji", "Konu": "Canlılar Dünyası", "Bitti": False}, {"Ders": "Biyoloji", "Konu": "Hücre Bölünmeleri ve Üreme", "Bitti": False}, {"Ders": "Biyoloji", "Konu": "Kalıtımın Genel İlkeleri", "Bitti": False}, {"Ders": "Biyoloji", "Konu": "Ekosistem Ekolojisi", "Bitti": False},
-        {"Ders": "Felsefe", "Konu": "Felsefe'nin Alanı", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Bilgi Felsefesi", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Bilim Felsefesi", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Varlık Felsefesi", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Ahlak Felsefesi", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Siyaset Felsefesi", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Sanat Felsefesi", "Bitti": False}, {"Ders": "Felsefe", "Konu": "Din Felsefesi", "Bitti": False},
-        {"Ders": "Din Kültürü", "Konu": "İnsan ve Din (İnanç)", "Bitti": False}, {"Ders": "Din Kültürü", "Konu": "İbadet", "Bitti": False}, {"Ders": "Din Kültürü", "Konu": "Hz. Muhammed'in Hayatı", "Bitti": False}, {"Ders": "Din Kültürü", "Konu": "Vahiy ve Akıl", "Bitti": False}, {"Ders": "Din Kültürü", "Konu": "İslam Düşüncesi ve Yorumu", "Bitti": False}, {"Ders": "Din Kültürü", "Konu": "İslamda Değerler, Sanat ve Laiklik", "Bitti": False}, {"Ders": "Din Kültürü", "Konu": "Yaşayan Dinler", "Bitti": False}
+        {"Ders": "Türkçe", "Konu": "Sözcükte Anlam", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Cümlede Anlam", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Paragrafta Anlam", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Anlatım Biçimleri", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Ses Bilgisi", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Yazım Kuralları", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Noktalama İşaretleri", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Sözcükte Yapı", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Sözcük Türleri", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Edat-Bağlaç-Ünlem", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Fiil-Ek Fiil", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Fiilimsi", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Fiilde Çatı", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Deyim ve Atasözü", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Cümlenin Öğeleri", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Cümle Türleri", "Bitti": "False"}, {"Ders": "Türkçe", "Konu": "Anlatım Bozuklukları", "Bitti": "False"},
+        {"Ders": "Matematik", "Konu": "Temel Kavramlar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Sayı Basamakları", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Bölme ve Bölünebilme", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "EBOB-EKOK", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Rasyonel Sayılar-Ondalık Sayılar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Basit Eşitsizlikler", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Mutlak Değer", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Üslü Sayılar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Köklü Sayılar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Çarpanlara Ayırma", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Oran Orantı", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Denklem Çözme", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Problemler", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Kümeler-Kartezyen Çarpımı", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Fonksiyonlar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Permütasyon", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Kombinasyon", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Binom", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Olasılık", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "İstatistik", "Bitti": "False}, {"Ders": "Matematik", "Konu": "2. Dereceden Denklemler", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Karmaşık Sayılar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Polinomlar", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Mantık", "Bitti": "False"}, {"Ders": "Matematik", "Konu": "Veri Analizi", "Bitti": "False"},
+        {"Ders": "Geometri", "Konu": "Doğruda ve Üçgende Açılar", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Üçgende Açı-Kenar Bağıntıları", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Üçgende Benzerlik", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Üçgende Açıortay-Kenarortay", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Dik Üçgen", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "İkizkenar Üçgen", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Eşkenar Üçgen", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Üçgende Alan", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Çokgenler", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Dörtgenler", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Yamuk-Paralelkenar", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Eşkenar Dörtgen", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Dikdörtgen", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Kare", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Deltoid", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Çemberde Açı", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Çemberde Uzunluk", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Dairenin Çevresi ve Alanı", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Doğrunun Analitik İncelenmesi", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Çemberin Analitik İncelenmesi", "Bitti": "False"}, {"Ders": "Geometri", "Konu": "Katı Cisimler", "Bitti": "False"},
+        {"Ders": "Tarih", "Konu": "Tarih Bilimine Giriş", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Uygarlığın Doğuşu ve İlk Uygarlıklar", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "İlk Türk Devletleri", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "İslam Tarihi ve Uygarlığı", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Türk-İslam Devletleri", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Türkler'in İslamiyeti Kabulü", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Türkiye Tarihi", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Beylikten Devlete (1300-1453)", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Dünya Gücü: Osmanlı Devleti", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Osmanlı Duraklama Dönemi", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Gerileme Devri (1699 – 1792)", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Arayış Yılları (17. Yüzyıl)", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Avrupa ve Osmanlı Devleti (18. Yüzyıl)", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "En Uzun Yüzyıl (1800-1922)", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "20. Yüzyıl Başlarında Osmanlı Devleti", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "XIX. YY Osmanlı Devleti", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "1. Dünya Savaşı", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Kurtuluş Savaşında Cepheler", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Türk İnkılabı", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Atatürkçülük ve Atatürk İlkeleri", "Bitti": "False"}, {"Ders": "Tarih", "Konu": "Türk Dış Politikası", "Bitti": "False"},
+        {"Ders": "Coğrafya", "Konu": "İnsan ve Doğa", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Dünya'nın Şekli ve Hareketleri", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Coğrafi Konum", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Harita Bilgisi", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Atmosfer ve Sıcaklık", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "İklimler", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Basınç ve Rüzgarlar", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Nem, Yağış ve Buharlaşma", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "İç Kuvvetler / Dış Kuvvetler", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Su – Toprak ve Bitkiler", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Nüfus-Göç-Yerleşme", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Türkiye'nin Yer Şekilleri", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Ekonomik Faaliyetler", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Bölgeler ve Ülkeler", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Uluslararası Ulaşım Hatları", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Çevre ve Toplum", "Bitti": "False"}, {"Ders": "Coğrafya", "Konu": "Doğal Afetler", "Bitti": "False"},
+        {"Ders": "Fizik", "Konu": "Fizik Bilimine Giriş", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Madde ve Özellikleri", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Kuvvet ve Hareket", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "İş, Güç ve Enerji", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Isı, Sıcaklık ve Genleşme", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Basınç", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Kaldırma Kuvveti", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Elektrik ve Manyetizma", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Dalgalar", "Bitti": "False"}, {"Ders": "Fizik", "Konu": "Optik", "Bitti": "False"},
+        {"Ders": "Kimya", "Konu": "Kimya Bilimi", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Atom ve Periyodik Sistem", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Kimyasal Türler Arası Etkileşimler", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Maddenin Halleri", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Doğa ve Kimya", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Kimyanın Temel Kanunları", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Karışımlar", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Asitler-Bazlar ve Tuzlar", "Bitti": "False"}, {"Ders": "Kimya", "Konu": "Kimya Her Yerde", "Bitti": "False"},
+        {"Ders": "Biyoloji", "Konu": "Yaşam Bilimi Biyoloji", "Bitti": "False"}, {"Ders": "Biyoloji", "Konu": "Hücre", "Bitti": "False"}, {"Ders": "Biyoloji", "Konu": "Canlılar Dünyası", "Bitti": "False"}, {"Ders": "Biyoloji", "Konu": "Hücre Bölünmeleri ve Üreme", "Bitti": "False"}, {"Ders": "Biyoloji", "Konu": "Kalıtımın Genel İlkeleri", "Bitti": "False"}, {"Ders": "Biyoloji", "Konu": "Ekosistem Ekolojisi", "Bitti": "False"},
+        {"Ders": "Felsefe", "Konu": "Felsefe'nin Alanı", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Bilgi Felsefesi", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Bilim Felsefesi", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Varlık Felsefesi", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Ahlak Felsefesi", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Siyaset Felsefesi", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Sanat Felsefesi", "Bitti": "False"}, {"Ders": "Felsefe", "Konu": "Din Felsefesi", "Bitti": "False"},
+        {"Ders": "Din Kültürü", "Konu": "İnsan ve Din (İnanç)", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "İbadet", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "Hz. Muhammed'in Hayatı", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "Vahiy ve Akıl", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "İslam Düşüncesi ve Yorumu", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "İslamda Değerler, Sanat ve Laiklik", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "Yaşayan Dinler", "Bitti": "False"}
     ]
     df_konu = load_df("konu_ilerleme.csv", "Konular", varsayilan_konular)
     
     toplam = len(df_konu)
-    # Google'dan gelen metin (string) tabanlı 'True' değerlerini güvenlice sayıyoruz
     biten = int(df_konu["Bitti"].astype(str).str.lower().isin(["true", "1", "1.0", "yes", "evet"]).sum()) if not df_konu.empty and "Bitti" in df_konu.columns else 0
     yuzde = int((biten / toplam) * 100) if toplam > 0 else 0
     st.markdown(f"""<div style="background-color: {card}; padding: 15px; border-radius: 10px; border: 2px solid {border}; margin-bottom: 20px;"><h4 style="color: {hdr}; margin-top: 0; text-align: center;">Genel Müfredat Oranı: %{yuzde}</h4><div style="background-color: {btn}; border-radius: 20px; width: 100%; height: 22px;"><div style="background-color: {border}; width: {yuzde}%; height: 100%; border-radius: 20px; text-align: center; color: white; font-weight: bold; font-size: 14px; line-height: 22px;">%{yuzde}</div></div></div>""", unsafe_allow_html=True)
@@ -460,8 +436,9 @@ def c_konu_ilerleme():
     if len(dersler) > 0:
         secilen_ders = st.selectbox("İncelemek İstediğin Dersi Seç:", dersler)
         for idx, row in df_konu[df_konu["Ders"] == secilen_ders].iterrows():
-            durum = st.checkbox(row["Konu"], value=row["Bitti"], key=f"konu_{idx}")
-            if durum != row["Bitti"]:
+            mevcut_durum = str(row["Bitti"]).lower() in ["true", "1", "yes", "evet"]
+            durum = st.checkbox(row["Konu"], value=mevcut_durum, key=f"konu_{idx}")
+            if durum != mevcut_durum:
                 df_konu.at[idx, "Bitti"] = str(durum)
                 save_df(df_konu, "konu_ilerleme.csv", "Konular")
                 st.rerun()
@@ -475,20 +452,24 @@ def c_kumbara():
         with c1: yeni = st.text_input("Eksik konu/soru:", placeholder="Örn: Ses Bilgisi", label_visibility="collapsed")
         with c2: 
             if st.form_submit_button("Kumbaraya At") and yeni.strip():
-                df_kumbara = pd.concat([df_kumbara, pd.DataFrame([{"Eksik": yeni.strip(), "Durum": False}])], ignore_index=True)
+                df_kumbara = pd.concat([df_kumbara, pd.DataFrame([{"Eksik": yeni.strip(), "Durum": "False"}])], ignore_index=True)
                 save_df(df_kumbara, "soru_kumbara.csv", "Kumbara")
                 st.rerun()
                 
     if len(df_kumbara) > 0:
         for idx, row in df_kumbara.iterrows():
-            if not row["Durum"]:
-                if st.checkbox(row["Eksik"], key=f"eksik_{idx}"):
-                    df_kumbara.at[idx, "Durum"] = True
+            is_done = str(row.get("Durum", "False")).lower() in ["true", "1", "yes", "evet"]
+            if not is_done:
+                if st.checkbox(str(row.get("Eksik", "")), key=f"eksik_{idx}"):
+                    df_kumbara.at[idx, "Durum"] = "True"
                     save_df(df_kumbara, "soru_kumbara.csv", "Kumbara")
                     st.balloons(); st.rerun()
-            else: st.checkbox(f"~~{row['Eksik']}~~ ✅", value=True, disabled=True, key=f"coz_{idx}")
-        if df_kumbara["Durum"].any() and st.button("🧹 Halledilenleri Temizle"):
-            df_kumbara = df_kumbara[df_kumbara["Durum"] == False]
+            else: 
+                st.checkbox(f"~~{row.get('Eksik', '')}~~ ✅", value=True, disabled=True, key=f"coz_{idx}")
+        
+        bitti_mask = df_kumbara["Durum"].astype(str).str.lower().isin(["true", "1", "yes", "evet"])
+        if bitti_mask.any() and st.button("🧹 Halledilenleri Temizle"):
+            df_kumbara = df_kumbara[~bitti_mask]
             save_df(df_kumbara, "soru_kumbara.csv", "Kumbara")
             st.rerun()
 
@@ -507,36 +488,23 @@ def c_panel():
         # 4. Sekme eklendi: Sistem Ayarları
         tab_sinyal, tab_gorev, tab_veri, tab_ayarlar = st.tabs(["🚨 Sinyal", "📝 Görev Ver", "📈 Veri Tablosu", "⚙️ Sistem Ayarları"])
         
-        # BÜTÜN VERİLERİ SIFIRLAMA BÖLÜMÜ
-        with tab_ayarlar:
-            st.subheader("⚠️ Tehlikeli Bölge")
-            st.write("Uygulamadaki tüm verileri silerek Google Drive'ı sıfırlar.")
-            
-            with st.expander("Bütün Verileri Sıfırla (DİKKAT!)"):
-                st.warning("Bu işlem geri alınamaz! Su, görev, konu, net, hayal ve günlük verilerinin hepsi kalıcı olarak silinecektir.")
-                onay = st.text_input("Silmek istediğine eminsen büyük harflerle SİL yaz:")
-                
-                if st.button("🔴 Tıklarsan Her Şey Uçar", type="primary"):
-                    if onay == "SİL":
-                        # Orijinal başlıklarını BOZMADAN sadece içindeki verileri silen Akıllı Sıfırlama
-                        sekmeler = [
-                            ("su_takip.csv", "Su"), ("todo_listesi.csv", "Todo"), 
-                            ("gunluk_ozet.csv", "Gunluk_Ozet"), ("konu_ilerleme.csv", "Konular"), 
-                            ("deneme_netleri.csv", "Netler"), ("hayal_kumbarasi.csv", "Hayaller"), 
-                            ("ozel_gorevler.csv", "Gorevler")
-                        ]
-                        
-                        for dosya, sekme in sekmeler:
-                            mevcut_df = load_df(dosya, sekme, {})
-                            if not mevcut_df.empty:
-                                # Mevcut sütun başlıklarını kopyala, içini boş bırak ve kaydet
-                                bos_df = pd.DataFrame(columns=mevcut_df.columns)
-                                save_df(bos_df, dosya, sekme)
-                                
-                        st.success("Tüm veriler başarıyla sıfırlandı! Yeni bir başlangıca hazırsınız.")
-                        st.balloons()
-                    else:
-                        st.error("İşlemi onaylamak için kutucuğa tam olarak SİL yazmalısın.")
+        with tab_sinyal:
+            st.subheader("🚨 Sude'ye Canlı Sinyal Gönder")
+            signal_dosya = "ardadan_mesaj.json"
+            with st.form("sinyal_formu"):
+                 sinyal_mesaji = st.text_input("Sude'ye İletilecek Mesaj:", placeholder="Örn: Tablette mola verme zamanı! ☕")
+                 if st.form_submit_button("Sinyali Gönder 🚀") and sinyal_mesaji.strip():
+                     s_data = {"aktif": True, "mesaj": sinyal_mesaji.strip()}
+                     try:
+                         with open(signal_dosya, "w", encoding="utf-8") as f: json.dump(s_data, f)
+                     except: pass
+                     st.success("Sinyal Sude'ye iletildi! ✨")
+            if st.button("Sinyali İptal Et / Kapat 🛑"):
+                if os.path.exists(signal_dosya):
+                    try:
+                        with open(signal_dosya, "w", encoding="utf-8") as f: json.dump({"aktif": False, "mesaj": ""}, f)
+                    except: pass
+                    st.info("Sinyal kapatıldı.")
                     
         with tab_gorev:
             st.subheader("Sude'ye Özel Görev Tanımla")
@@ -584,15 +552,20 @@ def c_panel():
                 
                 if st.button("🔴 Tıklarsan Her Şey Uçar", type="primary"):
                     if onay == "SİL":
-                        # Google Drive'daki tüm sekmelerin üstüne boş başlıklar yazarak sıfırlıyoruz
-                        save_df(pd.DataFrame(columns=["Tarih", "Bardak"]), "su_takip.csv", "Su")
-                        save_df(pd.DataFrame(columns=["Gorev", "Durum"]), "todo_listesi.csv", "Todo")
-                        save_df(pd.DataFrame(columns=["Tarih", "Baslama", "Bitis", "Saat", "Gunluk"]), "gunluk_ozet.csv", "Gunluk_Ozet")
-                        save_df(pd.DataFrame(columns=["Ders", "Konu", "Bitti"]), "konu_ilerleme.csv", "Konular")
-                        save_df(pd.DataFrame(columns=["Tarih", "Deneme Adı", "TYT Net"]), "deneme_netleri.csv", "Netler")
-                        save_df(pd.DataFrame(columns=["Tarih", "Hayal"]), "hayal_kumbarasi.csv", "Hayaller")
-                        save_df(pd.DataFrame(columns=["Gorev", "Odul", "Durum"]), "ozel_gorevler.csv", "Gorevler")
+                        # Orijinal başlıklarını BOZMADAN sadece içindeki verileri silen Akıllı Sıfırlama
+                        sekmeler = [
+                            ("su_takip.csv", "Su"), ("todo_listesi.csv", "Todo"), 
+                            ("gunluk_ozet.csv", "Gunluk_Ozet"), ("konu_ilerleme.csv", "Konular"), 
+                            ("deneme_netleri.csv", "Netler"), ("hayal_kumbarasi.csv", "Hayaller"), 
+                            ("ozel_gorevler.csv", "Gorevler")
+                        ]
                         
+                        for dosya, sekme in sekmeler:
+                            mevcut_df = load_df(dosya, sekme, {})
+                            if not mevcut_df.empty:
+                                bos_df = pd.DataFrame(columns=mevcut_df.columns)
+                                save_df(bos_df, dosya, sekme)
+                                
                         st.success("Tüm veriler başarıyla sıfırlandı! Yeni bir başlangıca hazırsınız.")
                         st.balloons()
                     else:
@@ -613,7 +586,7 @@ def c_yapay_zeka():
     if st.button("✨ Asistana Sor", use_container_width=True):
         if soru.strip():
             if not GROQ_API_KEY and not GEMINI_API_KEY:
-                st.warning("⚠️️ Streamlit Secrets kısmında API anahtarı bulunamadı!")
+                st.warning("⚠ Streamlit Secrets kısmında API anahtarı bulunamadı!")
                 return
                 
             with st.spinner("🤔 Arda düşünüyor..."):
@@ -657,7 +630,6 @@ def c_eglence():
     
     tab1, tab2, tab3, tab4 = st.tabs(["❌⭕ XOX Oyunu", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
     
-    # 1. XOX OYUNU
     with tab1:
         st.subheader("Klasik XOX (Tic-Tac-Toe)")
         if 'xox_board' not in st.session_state:
@@ -667,7 +639,6 @@ def c_eglence():
         col1, col2, col3 = st.columns([1,1,1])
         for i in range(9):
             with [col1, col2, col3][i % 3]:
-                # Kutucuklar için butonlar
                 if st.button(st.session_state.xox_board[i] if st.session_state.xox_board[i] else "⬜", key=f"xox_{i}", use_container_width=True):
                     if st.session_state.xox_board[i] == "":
                         st.session_state.xox_board[i] = st.session_state.xox_turn
@@ -679,7 +650,6 @@ def c_eglence():
             st.session_state.xox_turn = "X"
             st.rerun()
 
-    # 2. SANAL BALONCUK NAYLONU (Stres Atmak İçin)
     with tab2:
         st.subheader("🫧 Sınırsız Baloncuk Patlat")
         st.caption("Stresini atmak için kutucuklara tıkla, patlayanlar bitince hepsini geri getirmek için sekmeye tekrar tıkla!")
@@ -688,7 +658,6 @@ def c_eglence():
             with cols[i % 6]:
                 st.checkbox("Pop!", key=f"bubble_{i}")
                 
-    # 3. RENK TERAPİSİ (Zihinsel Rahatlama)
     with tab3:
         import random
         st.subheader("🧘‍♀️ Zihinsel Molan")
@@ -709,7 +678,6 @@ def c_eglence():
             </div>
             """, unsafe_allow_html=True)
 
-    # 4. SAYI TAHMİNİ (Kafayı Dağıtmak İçin)
     with tab4:
         import random
         st.subheader("🎯 Aklımdaki Sayıyı Bul")
@@ -727,7 +695,7 @@ def c_eglence():
             else:
                 st.success("Tebrikler! 🎉 Doğru bildin!")
                 st.balloons()
-                st.session_state.gizli_sayi = random.randint(1, 50) # Doğru bilirse yeni sayı tutar
+                st.session_state.gizli_sayi = random.randint(1, 50) 
 
 # =========================================================
 # ARAYÜZ YÖNETİCİSİ
@@ -764,7 +732,7 @@ else:
         aktif = st.session_state['aktif_uygulama']
         if aktif == 'masa': c_pomodoro()
         elif aktif == 'todo': c_todo(); c_kumbara()
-        elif aktif == 'gunluk': c_su(); c_gunluk()
+        elif aktif == 'gunluk': c_su(); c_gun_sonu()
         elif aktif == 'net': c_net_takibi(); c_konu_ilerleme()
         elif aktif == 'odul': c_oduller()
         elif aktif == 'ai': c_yapay_zeka()
