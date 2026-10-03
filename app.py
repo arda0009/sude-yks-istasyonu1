@@ -372,6 +372,10 @@ def c_net_takibi():
     hedef_universite = "Güneş Üniversitesi Tıp Fakültesi"; hedef_tyt = 105.0; hedef_ayt = 64.0
     
     df_netler = load_df("deneme_netleri.csv", "Netler", {"Deneme Adı": [], "Sınav": [], "Türkçe/Edebiyat": [], "Matematik": [], "Sosyal": [], "Fen": [], "Toplam Net": []})
+    if "Sınav" not in df_netler.columns: 
+        df_netler["Sınav"] = ""
+    if "Toplam Net" not in df_netler.columns: 
+        df_netler["Toplam Net"] = 0.0
         
     rekor_tyt = df_netler[df_netler["Sınav"] == "TYT"]["Toplam Net"].max() if not df_netler[df_netler["Sınav"] == "TYT"].empty else 0.0
     rekor_ayt = df_netler[df_netler["Sınav"] == "AYT"]["Toplam Net"].max() if not df_netler[df_netler["Sınav"] == "AYT"].empty else 0.0
