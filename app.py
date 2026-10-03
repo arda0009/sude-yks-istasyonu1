@@ -51,9 +51,8 @@ def load_df(filename, ws_name, default_data):
         return pd.read_csv(filename)
 
 def save_df(df, filename, ws_name):
-    df.to_csv(filename, index=False) # Arayüz hızı için anında lokale kaydet
+    df.to_csv(filename, index=False)
     
-    # Arka planda Google Drive'a yedekle
     gc = get_gspread_client()
     if gc:
         try:
@@ -64,18 +63,13 @@ def save_df(df, filename, ws_name):
                 ws = sh.add_worksheet(title=ws_name, rows="1000", cols="20")
             
             df_cloud = df.copy()
-            df_cloud.fillna("", inplace=True) # Boş verilerin hata vermesini engelle
+            df_cloud.fillna("", inplace=True)
             ws.clear()
             ws.update(values=[df_cloud.columns.values.tolist()] + df_cloud.values.tolist())
         except Exception as e:
-            st.error(f"🚨 Google Drive Yazma Hatası: {e}") # Hatayı yakalayıp ekrana basıyoruz
+            st.error(f"🚨 Google Drive Yazma Hatası: {e}")
     else:
-        st.error("🚨 Google Drive Bağlantısı Kurulamadı! (JSON şifresinde veya gspread kütüphanesinde sorun var)")
-
-
-
-            st.error(f"Bulut Hatası: {e}")
-
+        st.error("🚨 Google Drive Bağlantısı Kurulamadı!")
 # --- SİSTEM DEĞİŞKENLERİ ---
 if 'tema' not in st.session_state: st.session_state['tema'] = 'Gündüz Bahçesi 🌻'
 if 'arayuz' not in st.session_state: st.session_state['arayuz'] = 'sekmeler'
