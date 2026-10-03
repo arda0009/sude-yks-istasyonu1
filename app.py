@@ -506,7 +506,7 @@ def c_panel():
                     st.success("Görev başarıyla Sude'nin Ana Sayfasına gönderildi!")
                     
         with tab_veri:
-            def c_panel_grafikler():
+    
     st.header("📊 Yönetici Paneli: Sude'nin Performans Analizi")
     df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
     
