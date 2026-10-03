@@ -416,7 +416,9 @@ def c_konu_ilerleme():
     ]
     df_konu = load_df("konu_ilerleme.csv", "Konular", varsayilan_konular)
     
-    toplam = len(df_konu); biten = int(df_konu["Bitti"].sum()) if not df_konu.empty else 0
+    toplam = len(df_konu)
+    # Google'dan gelen metin (string) tabanlı 'True' değerlerini güvenlice sayıyoruz
+    biten = int(df_konu["Bitti"].astype(str).str.lower().isin(["true", "1", "1.0", "yes", "evet"]).sum()) if not df_konu.empty and "Bitti" in df_konu.columns else 0
     yuzde = int((biten / toplam) * 100) if toplam > 0 else 0
     st.markdown(f"""<div style="background-color: {card}; padding: 15px; border-radius: 10px; border: 2px solid {border}; margin-bottom: 20px;"><h4 style="color: {hdr}; margin-top: 0; text-align: center;">Genel Müfredat Oranı: %{yuzde}</h4><div style="background-color: {btn}; border-radius: 20px; width: 100%; height: 22px;"><div style="background-color: {border}; width: {yuzde}%; height: 100%; border-radius: 20px; text-align: center; color: white; font-weight: bold; font-size: 14px; line-height: 22px;">%{yuzde}</div></div></div>""", unsafe_allow_html=True)
     
