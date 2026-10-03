@@ -14,7 +14,7 @@ except ImportError:
 import requests 
 
 # Tarayıcı sekmesinde görünecek başlık
-st.set_page_config(page_title="Sude'nin Çalışma Alanı", page_icon="🌻", layout="wide")
+st.set_page_config(page_title="Sude'nin Çalışma Alanı", page_icon="<3", layout="wide")
 
 # --- BULUT SENKRONİZASYON (GOOGLE SHEETS) MİMARİSİ ---
 @st.cache_resource
@@ -54,7 +54,7 @@ def load_df(filename, ws_name, default_data):
         return pd.read_csv(filename)
 
 def save_df(df, filename, ws_name):
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False) # Lokale kaydet
     
     gc = get_gspread_client()
     if gc:
@@ -65,14 +65,23 @@ def save_df(df, filename, ws_name):
             except:
                 ws = sh.add_worksheet(title=ws_name, rows="1000", cols="20")
             
-            df_cloud = df.copy()
-            df_cloud.fillna("", inplace=True)
+            # KRİTİK NOKTA: Google hata vermesin diye tüm verileri zorla String (Metin) yapıyoruz
+            df_cloud = df.copy().astype(str)
+            df_cloud.replace("nan", "", inplace=True)
+            
+            # Gspread'in en sorunsuz kabul ettiği liste formatı
+            veri_listesi = [df_cloud.columns.tolist()] + df_cloud.values.tolist()
+            
             ws.clear()
-            ws.update(values=[df_cloud.columns.values.tolist()] + df_cloud.values.tolist())
+            ws.update(veri_listesi) 
+            
+            # Başarılı olursa ekrana pop-up mesaj basacak
+            st.toast(f"✅ {ws_name} verisi Google Drive'a başarıyla yazıldı!") 
+            
         except Exception as e:
-            st.error(f"🚨 Google Drive Yazma Hatası: {e}")
+            st.error(f"🚨 Yazma Hatası: {e}")
     else:
-        st.error("🚨 Google Drive Bağlantısı Kurulamadı!")
+        st.error("🚨 Bağlantı Hatası: Sunucu Google'a bağlanamadı.")
 # --- SİSTEM DEĞİŞKENLERİ ---
 if 'tema' not in st.session_state: st.session_state['tema'] = 'Gündüz Bahçesi 🌻'
 if 'arayuz' not in st.session_state: st.session_state['arayuz'] = 'sekmeler'
