@@ -493,9 +493,10 @@ def c_muzik():
     components.html(f"""<style>body {{ background-color: {bg}; margin: 0; padding: 0; overflow: hidden; }}</style><iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/0zHr4z4SfUeKZOXv3rxVIV?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>""", height=360)
 
 def c_panel():
-    st.header("⚙️️ Arda'nın Gizli Paneli")
+    st.header("⚙ Arda'nın Gizli Paneli")
     sifre = st.text_input("Şifre:", type="password")
     
+    # 1. ŞİFRE DOĞRUYSA ÇALIŞACAK KISIM
     if sifre == "1905":
         st.success("Giriş Başarılı!")
         st.markdown("---")
@@ -535,14 +536,12 @@ def c_panel():
                     save_df(df_gorev, "ozel_gorevler.csv", "Gorevler")
                     st.success("Görev başarıyla Sude'nin Ana Sayfasına gönderildi!")
 
-        # YENİ EKLENEN GRAFİK VE GÜNLÜK BÖLÜMÜ
         with tab_veri:
             st.subheader("📈 Sude'nin Performans Grafikleri ve Günlüğü")
             df_gunluk = load_df("gunluk_ozet.csv", "Gunluk_Ozet", {"Tarih": [], "Baslama": [], "Bitis": [], "Saat": [], "Gunluk": []})
             
             if not df_gunluk.empty:
                 df_grafik = df_gunluk.copy()
-                # Saati matematiksel grafiğe dökebilmek için metinden sayıya çeviriyoruz
                 df_grafik["Saat"] = pd.to_numeric(df_grafik["Saat"], errors='coerce').fillna(0)
                 
                 s1, s2 = st.columns(2)
@@ -559,11 +558,12 @@ def c_panel():
                 st.dataframe(df_grafik[["Tarih", "Gunluk"]], use_container_width=True)
             else:
                 st.info("Henüz grafik oluşturacak gün sonu verisi girilmemiş.")
-                    
+                
+    # 2. ŞİFRE YANLIŞSA (VE BOŞ DEĞİLSE) ÇALIŞACAK KISIM
+    elif sifre != "":
+        st.error("İzinsiz giriş!")
 
 
-
-    st.error("İzinsiz giriş!")
 def c_yapay_zeka():
     st.header("🤖 YKS Motivasyon & Çalışma Asistanı")
     st.write("Sınav süreciyle ilgili takıldığın soruları sorabilir, taktikler alabilirsin.")
