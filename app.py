@@ -426,6 +426,9 @@ def c_konu_ilerleme():
         {"Ders": "Din Kültürü", "Konu": "İnsan ve Din (İnanç)", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "İbadet", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "Hz. Muhammed'in Hayatı", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "Vahiy ve Akıl", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "İslam Düşüncesi ve Yorumu", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "İslamda Değerler, Sanat ve Laiklik", "Bitti": "False"}, {"Ders": "Din Kültürü", "Konu": "Yaşayan Dinler", "Bitti": "False"}
     ]
     df_konu = load_df("konu_ilerleme.csv", "Konular", varsayilan_konular)
+    if df_konu.empty:
+        df_konu = pd.DataFrame(varsayilan_konular)
+        save_df(df_konu, "konu_ilerleme.csv", "Konular")
     
     toplam = len(df_konu)
     biten = int(df_konu["Bitti"].astype(str).str.lower().isin(["true", "1", "1.0", "yes", "evet"]).sum()) if not df_konu.empty and "Bitti" in df_konu.columns else 0
@@ -628,36 +631,110 @@ def c_eglence():
     st.header("🎮 Mola & Meditasyon Merkezi")
     st.caption("Ders aralarında kafanı dağıtmak ve rahatlamak için buradasın! 🌟")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["❌⭕ XOX Oyunu", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🤖 Yapay Zekaya Karşı XOX", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
     
+    # 1. YAPAY ZEKAYA KARŞI XOX OYUNU
     with tab1:
-        st.subheader("Klasik XOX (Tic-Tac-Toe)")
+        st.subheader("🤖 Arda-Bot'a Karşı XOX")
         if 'xox_board' not in st.session_state:
             st.session_state.xox_board = [""] * 9
-            st.session_state.xox_turn = "X"
+            st.session_state.xox_winner = None
             
-        col1, col2, col3 = st.columns([1,1,1])
-        for i in range(9):
-            with [col1, col2, col3][i % 3]:
-                if st.button(st.session_state.xox_board[i] if st.session_state.xox_board[i] else "⬜", key=f"xox_{i}", use_container_width=True):
-                    if st.session_state.xox_board[i] == "":
-                        st.session_state.xox_board[i] = st.session_state.xox_turn
-                        st.session_state.xox_turn = "O" if st.session_state.xox_turn == "X" else "X"
-                        st.rerun()
-                        
+        def check_winner(board):
+            win_cond = [(0,1,2), (3,4,5), (6,7,8), (0,3,6), (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
+            for a, b, c in win_cond:
+                if board[a] == board[b] == board[c] and board[a] != "":
+                    return board[a]
+            if "" not in board:
+                return "Berabere"
+            return None
+            
+        def ai_move(board):
+            win_cond = [(0,1,2), (3,4,5), (6,7,8), (0,3,6), (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
+            empty = [i for i, x in enumerate(board) if x == ""]
+            if not empty: return None
+            
+            # 1. Yapay Zeka kazanabiliyor mu?
+            for a, b, c in win_cond:
+                line = [board[a], board[b], board[c]]
+                if line.count("⭕") == 2 and line.count("") == 1:
+                    return (a, b, c)[line.index("")]
+                    
+            # 2. Sude kazanabiliyor mu? Engelle!
+            for a, b, c in win_cond:
+                line = [board[a], board[b], board[c]]
+                if line.count("❌") == 2 and line.count("") == 1:
+                    return (a, b, c)[line.index("")]
+                    
+            # 3. Ortası boşsa orayı al
+            if board[4] == "": return 4
+            
+            # 4. Rastgele bir yer seç
+            import random
+            return random.choice(empty)
+
+        board = st.session_state.xox_board
+        winner = st.session_state.xox_winner
+
+        # Tasarımı daha derli toplu yapmak için sütunları daraltıp ortaya hizalıyoruz
+        orta_sutun = st.columns([1, 2, 1])
+        with orta_sutun[1]:
+            col1, col2, col3 = st.columns(3)
+            for i in range(9):
+                with [col1, col2, col3][i % 3]:
+                    btn_text = board[i] if board[i] != "" else "⬜"
+                    if st.button(btn_text, key=f"xox_{i}", use_container_width=True):
+                        if board[i] == "" and winner is None:
+                            board[i] = "❌"  # Oyuncu Hamlesi
+                            winner = check_winner(board)
+                            if winner is None:
+                                ai_idx = ai_move(board) # Yapay Zeka Hamlesi
+                                if ai_idx is not None:
+                                    board[ai_idx] = "⭕"
+                                    winner = check_winner(board)
+                            st.session_state.xox_board = board
+                            st.session_state.xox_winner = winner
+                            st.rerun()
+
+        if winner:
+            if winner == "Berabere":
+                st.info("Kıyasıya bir mücadele! Oyun Berabere Bitti! 🤝")
+            elif winner == "❌":
+                st.success("Tebrikler Sude! Arda-Bot'u Yendin! 🎉")
+                st.balloons()
+            else:
+                st.error("Arda-Bot Kazandı! Bir dahakine daha dikkatli olmalısın! 🤖")
+
         if st.button("Oyunu Sıfırla 🔄"):
             st.session_state.xox_board = [""] * 9
-            st.session_state.xox_turn = "X"
+            st.session_state.xox_winner = None
             st.rerun()
 
+    # 2. SANAL BALONCUK NAYLONU (KUTUCUK YERİNE BUTONLU TASARIM)
     with tab2:
         st.subheader("🫧 Sınırsız Baloncuk Patlat")
-        st.caption("Stresini atmak için kutucuklara tıkla, patlayanlar bitince hepsini geri getirmek için sekmeye tekrar tıkla!")
-        cols = st.columns(6)
-        for i in range(30):
-            with cols[i % 6]:
-                st.checkbox("Pop!", key=f"bubble_{i}")
-                
+        st.caption("Stresini atmak için baloncuklara tıkla! 💥")
+        
+        if 'bubbles' not in st.session_state:
+            st.session_state.bubbles = [False] * 30
+            
+        b_col1, b_col2, b_col3 = st.columns([1, 4, 1])
+        with b_col2:
+            cols = st.columns(6)
+            for i in range(30):
+                with cols[i % 6]:
+                    if not st.session_state.bubbles[i]:
+                        if st.button("🫧", key=f"bubble_{i}", use_container_width=True):
+                            st.session_state.bubbles[i] = True
+                            st.rerun()
+                    else:
+                        st.button("💥", key=f"bubble_popped_{i}", disabled=True, use_container_width=True)
+                        
+        if st.button("🔄 Yeni Balonlar Getir", use_container_width=True):
+            st.session_state.bubbles = [False] * 30
+            st.rerun()
+            
+    # 3. RENK TERAPİSİ
     with tab3:
         import random
         st.subheader("🧘‍♀️ Zihinsel Molan")
@@ -678,6 +755,7 @@ def c_eglence():
             </div>
             """, unsafe_allow_html=True)
 
+    # 4. SAYI TAHMİNİ
     with tab4:
         import random
         st.subheader("🎯 Aklımdaki Sayıyı Bul")
@@ -695,7 +773,7 @@ def c_eglence():
             else:
                 st.success("Tebrikler! 🎉 Doğru bildin!")
                 st.balloons()
-                st.session_state.gizli_sayi = random.randint(1, 50) 
+                st.session_state.gizli_sayi = random.randint(1, 50)
 
 # =========================================================
 # ARAYÜZ YÖNETİCİSİ
