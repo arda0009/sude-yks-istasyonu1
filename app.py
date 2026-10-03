@@ -611,9 +611,9 @@ def c_yapay_zeka():
                     for h in hatalar: st.write(h)
 
 def c_eglence():
-    def c_hayal_kumbarasi():
-        def c_eglence_ve_meditasyon():
     st.header("🎮 Mola & Meditasyon Merkezi")
+    st.caption("Ders aralarında kafanı dağıtmak ve rahatlamak için buradasın! 🌟")
+    
     tab1, tab2, tab3, tab4 = st.tabs(["❌⭕ XOX Oyunu", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
     
     # 1. XOX OYUNU
@@ -623,26 +623,25 @@ def c_eglence():
             st.session_state.xox_board = [""] * 9
             st.session_state.xox_turn = "X"
             
-        def reset_xox():
-            st.session_state.xox_board = [""] * 9
-            st.session_state.xox_turn = "X"
-
         col1, col2, col3 = st.columns([1,1,1])
         for i in range(9):
             with [col1, col2, col3][i % 3]:
+                # Kutucuklar için butonlar
                 if st.button(st.session_state.xox_board[i] if st.session_state.xox_board[i] else "⬜", key=f"xox_{i}", use_container_width=True):
                     if st.session_state.xox_board[i] == "":
                         st.session_state.xox_board[i] = st.session_state.xox_turn
                         st.session_state.xox_turn = "O" if st.session_state.xox_turn == "X" else "X"
                         st.rerun()
+                        
         if st.button("Oyunu Sıfırla 🔄"):
-            reset_xox()
+            st.session_state.xox_board = [""] * 9
+            st.session_state.xox_turn = "X"
             st.rerun()
 
     # 2. SANAL BALONCUK NAYLONU (Stres Atmak İçin)
     with tab2:
         st.subheader("🫧 Sınırsız Baloncuk Patlat")
-        st.caption("Stresini atmak için kutucuklara tıkla, hepsi bitince yenile!")
+        st.caption("Stresini atmak için kutucuklara tıkla, patlayanlar bitince hepsini geri getirmek için sekmeye tekrar tıkla!")
         cols = st.columns(6)
         for i in range(30):
             with cols[i % 6]:
@@ -650,11 +649,12 @@ def c_eglence():
                 
     # 3. RENK TERAPİSİ (Zihinsel Rahatlama)
     with tab3:
-        st.subheader("🧘‍♀️ Zihinsel Molan")
-        st.write("Derslerin stresini arkada bırakmak için butona bas ve sadece ekrandaki renge odaklanarak derin bir nefes al.")
         import random
+        st.subheader("🧘‍♀️ Zihinsel Molan")
+        st.write("Derslerin stresini arkada bırakmak için butona bas, sadece ekrandaki renge odaklan ve derin bir nefes al.")
+        
         if st.button("Bana Bir Renk ve Motivasyon Ver 🎨"):
-            renkler = ["#A2D2FF", "#BDE0FE", "#FFAFCC", "#FFC8DD", "#CDB4DB", "#8ECAE6", "#219EBC", "#84A59D"]
+            renkler = ["#A2D2FF", "#BDE0FE", "#FFAFCC", "#FFC8DD", "#CDB4DB", "#8ECAE6", "#219EBC", "#84A59D", "#F4A261", "#E76F51"]
             sozler = [
                 "Sen sandığından çok daha güçlüsün.",
                 "Şu an elinden gelenin en iyisini yapıyorsun, bu kadarı yeterli.",
@@ -663,18 +663,21 @@ def c_eglence():
                 "Zorlanman pes etmen gerektiği anlamına gelmez, geliştiğin anlamına gelir."
             ]
             st.markdown(f"""
-            <div style="background-color: {random.choice(renkler)}; padding: 50px; border-radius: 20px; text-align: center; color: #333;">
+            <div style="background-color: {random.choice(renkler)}; padding: 50px; border-radius: 20px; text-align: center; color: #333; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                 <h3 style="margin:0;">{random.choice(sozler)}</h3>
             </div>
             """, unsafe_allow_html=True)
 
     # 4. SAYI TAHMİNİ (Kafayı Dağıtmak İçin)
     with tab4:
+        import random
         st.subheader("🎯 Aklımdaki Sayıyı Bul")
+        
         if 'gizli_sayi' not in st.session_state:
             st.session_state.gizli_sayi = random.randint(1, 50)
             
-        tahmin = st.number_input("1 ile 50 arasında bir sayı tuttum. Sence kaç?", min_value=1, max_value=50)
+        tahmin = st.number_input("1 ile 50 arasında bir sayı tuttum. Sence kaç?", min_value=1, max_value=50, step=1)
+        
         if st.button("Tahmin Et"):
             if tahmin < st.session_state.gizli_sayi:
                 st.warning("Biraz daha yukarı! ⬆️")
@@ -683,91 +686,7 @@ def c_eglence():
             else:
                 st.success("Tebrikler! 🎉 Doğru bildin!")
                 st.balloons()
-                st.session_state.gizli_sayi = random.randint(1, 50) # Yeni sayı tut
-    st.subheader("☁️ Sınav Sonrası Hayal Kumbarası")
-    st.caption("YKS bittiğinde, üniversiteye geçtiğinde veya hemen yarın... Gerçekleştirmek istediğin her şeyi buraya at!")
-    
-    df_hayal = load_df("hayal_kumbarasi.csv", "Hayaller", {"Tarih": [], "Hayal": []})
-    
-    with st.form("hayal_form", clear_on_submit=True):
-        yeni_hayal = st.text_input("Ne yapmak istiyorsun?")
-        ekle = st.form_submit_button("Kumbaraya At 🌟")
-        
-        if ekle and yeni_hayal:
-            yeni_kayit = pd.DataFrame([{"Tarih": datetime.date.today().strftime("%d.%m.%Y"), "Hayal": yeni_hayal}])
-            df_hayal = pd.concat([df_hayal, yeni_kayit], ignore_index=True)
-            save_df(df_hayal, "hayal_kumbarasi.csv", "Hayaller")
-            st.success("Hayalin kumbaraya eklendi!")
-            st.rerun()
-            
-    st.divider()
-    if not df_hayal.empty:
-        for index, row in df_hayal.iloc[::-1].iterrows(): # En yeniler en üstte
-            st.info(f"✨ {row['Hayal']}")
-    st.header("🕹️ Eğlence & Mola Merkezi")
-    
-    st.subheader("📺 Sude'nin Favori Kanalları")
-    c1, c2, c3 = st.columns(3)
-    with c1: st.link_button("🦎 bakirkertenkele31", "https://www.youtube.com/results?search_query=bakirkertenkele31", use_container_width=True)
-    with c2: st.link_button("⭐ deniz yıldızı", "https://www.youtube.com/results?search_query=deniz+yıldızı", use_container_width=True)
-    with c3: st.link_button("🎮 rraene", "https://www.youtube.com/results?search_query=rraene", use_container_width=True)
-    
-    st.divider()
-    tab1, tab2 = st.tabs(["🎈 Balon Patlat", "🧠 Zihin Açıcı Matematik"])
-    
-    with tab1:
-        st.write("LOVEE YOUU.")
-        bubble_html = f"""
-        <style>
-        body {{ background-color: {bg}; margin: 0; padding: 0; overflow: hidden; }}
-        .bubble {{ width: 35px; height: 35px; background-color: {btn}; border-radius: 50%; margin: 5px; display: inline-block; cursor: pointer; transition: 0.1s; }}
-        .bubble.popped {{ background-color: {bg}; opacity: 0.2; transform: scale(0.85); box-shadow: none; pointer-events: none; }}
-        </style>
-        <div id="bw" style="max-width: 350px; margin: 0 auto; text-align: center; padding: 15px; background-color: {card}; border-radius: 15px; border: 2px solid {border};"></div>
-        <script>
-            function playPop() {{
-                try {{
-                    let actx = new (window.AudioContext || window.webkitAudioContext)();
-                    let osc = actx.createOscillator();
-                    let gain = actx.createGain();
-                    osc.connect(gain); gain.connect(actx.destination);
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, actx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(100, actx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(1, actx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.1);
-                    osc.start(actx.currentTime); osc.stop(actx.currentTime + 0.1);
-                }} catch(e) {{ console.log(e); }}
-            }}
-            const bw = document.getElementById('bw');
-            for(let i=0; i<30; i++) {{
-                let b = document.createElement('div'); b.className = 'bubble';
-                b.onclick = function() {{ this.classList.add('popped'); playPop(); }};
-                bw.appendChild(b);
-            }}
-        </script>
-        """
-        components.html(bubble_html, height=300)
-        
-    with tab2:
-        st.subheader("Hızlı Düşün, Zinde Kal! 🚀")
-        st.write("Ders aralarında odaklanmanı artırmak için ufak matematik egzersizleri.")
-        
-        if 'mat_soru' not in st.session_state:
-            s1 = random.randint(2, 9); s2 = random.randint(11, 20)
-            st.session_state.mat_soru = f"{s1} x {s2}"; st.session_state.mat_cevap = s1 * s2
-        
-        c_m1, c_m2 = st.columns([2, 1])
-        with c_m1:
-            tahmin = st.number_input(f"Soru: {st.session_state.mat_soru} = ?", step=1, value=0)
-        with c_m2:
-            st.write(""); st.write("")
-            if st.button("Cevapla 🎯", use_container_width=True):
-                if tahmin == st.session_state.mat_cevap:
-                    st.success("Harika! Zımba gibisin. 🚀"); st.balloons()
-                    s1 = random.randint(2, 9); s2 = random.randint(11, 25)
-                    st.session_state.mat_soru = f"{s1} x {s2}"; st.session_state.mat_cevap = s1 * s2
-                elif tahmin != 0:
-                    st.error("Biraz daha düşün bakalım... 🤔")
+                st.session_state.gizli_sayi = random.randint(1, 50) # Doğru bilirse yeni sayı tutar
 
 # =========================================================
 # ARAYÜZ YÖNETİCİSİ
