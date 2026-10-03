@@ -529,9 +529,7 @@ def c_panel():
                 )
             else:
                 st.info("Sude henüz bir günü kapatmamış, liste boş.")
-        else:
-            # df_gunluk tamamen boşsa gösterilecek mesaj (opsiyonel)
-            st.info("Sude henüz bir günü kapatmamış, liste boş.")
+
 
 # elif ana şifre kontrol if'i ile aynı hizada olmalı
 elif sifre:
