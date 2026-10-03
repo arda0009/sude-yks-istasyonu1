@@ -631,16 +631,13 @@ def c_eglence():
     st.header("🎮 Mola & Meditasyon Merkezi")
     st.caption("Ders aralarında kafanı dağıtmak ve rahatlamak için buradasın! 🌟")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["🤖 Yapay Zekaya Karşı XOX", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🤖 Yapay Zekaya Karşı XOX", "🫧 Sanal Baloncuk", "🧘‍♀️ Renk Terapisi", "🎯 Sayı Tahmini", "📺 YouTube Kısayolları"])
     
-
+    # 1. YAPAY ZEKAYA KARŞI XOX OYUNU
     with tab1:
         st.subheader("🤖 Arda-Bot'a Karşı XOX")
-        
-        # Her iki değişkeni de BİRBİRİNDEN BAĞIMSIZ olarak kontrol ediyoruz
         if 'xox_board' not in st.session_state:
             st.session_state.xox_board = [""] * 9
-            
         if 'xox_winner' not in st.session_state:
             st.session_state.xox_winner = None
             
@@ -658,29 +655,20 @@ def c_eglence():
             empty = [i for i, x in enumerate(board) if x == ""]
             if not empty: return None
             
-            # 1. Yapay Zeka kazanabiliyor mu?
             for a, b, c in win_cond:
                 line = [board[a], board[b], board[c]]
                 if line.count("⭕") == 2 and line.count("") == 1:
                     return (a, b, c)[line.index("")]
-                    
-            # 2. Sude kazanabiliyor mu? Engelle!
             for a, b, c in win_cond:
                 line = [board[a], board[b], board[c]]
                 if line.count("❌") == 2 and line.count("") == 1:
                     return (a, b, c)[line.index("")]
-                    
-            # 3. Ortası boşsa orayı al
             if board[4] == "": return 4
-            
-            # 4. Rastgele bir yer seç
-            import random
             return random.choice(empty)
 
         board = st.session_state.xox_board
         winner = st.session_state.xox_winner
 
-        # Tasarımı daha derli toplu yapmak için sütunları daraltıp ortaya hizalıyoruz
         orta_sutun = st.columns([1, 2, 1])
         with orta_sutun[1]:
             col1, col2, col3 = st.columns(3)
@@ -689,10 +677,10 @@ def c_eglence():
                     btn_text = board[i] if board[i] != "" else "⬜"
                     if st.button(btn_text, key=f"xox_{i}", use_container_width=True):
                         if board[i] == "" and winner is None:
-                            board[i] = "❌"  # Oyuncu Hamlesi
+                            board[i] = "❌"
                             winner = check_winner(board)
                             if winner is None:
-                                ai_idx = ai_move(board) # Yapay Zeka Hamlesi
+                                ai_idx = ai_move(board)
                                 if ai_idx is not None:
                                     board[ai_idx] = "⭕"
                                     winner = check_winner(board)
@@ -714,7 +702,7 @@ def c_eglence():
             st.session_state.xox_winner = None
             st.rerun()
 
-    # 2. SANAL BALONCUK NAYLONU (KUTUCUK YERİNE BUTONLU TASARIM)
+    # 2. SANAL BALONCUK NAYLONU
     with tab2:
         st.subheader("🫧 Sınırsız Baloncuk Patlat")
         st.caption("Stresini atmak için baloncuklara tıkla! 💥")
@@ -740,7 +728,6 @@ def c_eglence():
             
     # 3. RENK TERAPİSİ
     with tab3:
-        import random
         st.subheader("🧘‍♀️ Zihinsel Molan")
         st.write("Derslerin stresini arkada bırakmak için butona bas, sadece ekrandaki renge odaklan ve derin bir nefes al.")
         
@@ -761,7 +748,6 @@ def c_eglence():
 
     # 4. SAYI TAHMİNİ
     with tab4:
-        import random
         st.subheader("🎯 Aklımdaki Sayıyı Bul")
         
         if 'gizli_sayi' not in st.session_state:
@@ -778,6 +764,26 @@ def c_eglence():
                 st.success("Tebrikler! 🎉 Doğru bildin!")
                 st.balloons()
                 st.session_state.gizli_sayi = random.randint(1, 50)
+
+    # 5. YOUTUBE KISAYOLLARI
+    with tab5:
+        st.subheader("📺 Favori YouTube Kısayolları")
+        st.write("Mola verdiğinde hızlıca göz atabileceğin kanallar:")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### 🔴 RRaene")
+            st.markdown("[Kanalı Ziyaret Et](https://www.youtube.com/@RRaene)", unsafe_allow_html=True)
+            
+            st.markdown("### 🟢 Bakır Kertenkele")
+            st.markdown("[YouTube'da Ara / Aç](https://www.youtube.com/results?search_query=bakir+kertenkele)", unsafe_allow_html=True)
+            
+        with col2:
+            st.markdown("### 🔵 Deniz Yıldızı")
+            st.markdown("[YouTube'da Ara / Aç](https://www.youtube.com/results?search_query=deniz+yildizi)", unsafe_allow_html=True)
+            
+            st.markdown("### ⚪ YouTube Ana Sayfa")
+            st.markdown("[YouTube'a Git](https://www.youtube.com)", unsafe_allow_html=True)
 
 # =========================================================
 # ARAYÜZ YÖNETİCİSİ
