@@ -1,16 +1,17 @@
 {
-  "name": "Sude'nin Motivasyon İstasyonu",
-  "short_name": "Sude YKS",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#FFF5F5",
-  "theme_color": "#D6336C",
-  "orientation": "portrait",
+  "short_name": "sudew YKS",
+  "name": "motivasyon istasyonu",
   "icons": [
     {
-      "src": "https://img.icons8.com/color/512/hearts.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "favicon_512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
-  ]
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#4f0398",
+  "id": "com.sude.yksistasyonu",
+  "description": "Sude'nin YKS hazırlık, net takibi, çalışma masası ve motivasyon uygulaması."
 }
