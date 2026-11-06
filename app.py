@@ -15,6 +15,7 @@ import requests
 
 # Tarayıcı sekmesinde görünecek başlık
 st.set_page_config(page_title="Sude'nin Çalışma Alanı", page_icon="💖", layout="wide")
+st.markdown('<link rel="manifest" href="manifest.json">', unsafe_allow_html=True)
 
 # --- BULUT SENKRONİZASYON (GOOGLE SHEETS) MİMARİSİ ---
 @st.cache_resource

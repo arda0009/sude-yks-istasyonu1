@@ -1,0 +1,16 @@
+{
+  "name": "Sude'nin Motivasyon İstasyonu",
+  "short_name": "Sude YKS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF5F5",
+  "theme_color": "#D6336C",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/512/hearts.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
